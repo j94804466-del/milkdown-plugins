@@ -1,0 +1,482 @@
+/* ============================================
+ * Milkdown Slash Menu - CSS Variables
+ * ============================================
+ * 所有变量都可以通过覆盖 :root 来自定义
+ */
+
+:root {
+  /* ---- 颜色 ---- */
+  --milkdown-slash-menu-bg: #fff;                    /* 菜单背景色 */
+  --milkdown-slash-menu-border: #cbd5e1;             /* 边框颜色 */
+  --milkdown-slash-menu-text: #1e293b;               /* 主文本颜色 */
+  --milkdown-slash-menu-text-secondary: #64748b;     /* 次要文本颜色 */
+  --milkdown-slash-menu-hover-bg: #cbd5e1;           /* 悬停背景色 */
+  --milkdown-slash-menu-tab-bg: #f8fafc;             /* 标签栏背景色 */
+  --milkdown-slash-menu-tab-active: #3b82f6;         /* 激活标签/图标背景色 */
+
+  /* ---- 容器 ---- */
+  --milkdown-slash-menu-container-padding: 10px;     /* 容器内边距 */
+  --milkdown-slash-menu-z-index: 9999;               /* 层级 */
+
+  /* ---- 尺寸 ---- */
+  --milkdown-slash-menu-width: 300px;                /* 菜单宽度 */
+  --milkdown-slash-menu-max-height: 520px;           /* 内容区最大高度 */
+  --milkdown-slash-menu-border-radius: 12px;         /* 菜单圆角 */
+  --milkdown-slash-menu-item-radius: 8px;            /* 菜单项圆角 */
+  --milkdown-slash-menu-icon-size: 28px;             /* 图标容器尺寸 */
+  --milkdown-slash-menu-icon-radius: 6px;            /* 图标容器圆角 */
+
+  /* ---- 标签栏 ---- */
+  --milkdown-slash-menu-tab-radius: 6px;             /* 标签圆角 */
+  --milkdown-slash-menu-tab-padding: 6px 14px;       /* 标签内边距 */
+
+  /* ---- 间距 ---- */
+  --milkdown-slash-menu-padding: 6px;                /* 内容区内边距 */
+  --milkdown-slash-menu-item-padding: 10px 12px;     /* 菜单项内边距 */
+  --milkdown-slash-menu-item-gap: 12px;              /* 菜单项内部间距 */
+
+  /* ---- 动画 ---- */
+  --milkdown-slash-menu-transition: 0.15s ease;      /* 过渡动画 */
+
+  /* ---- 阴影 ---- */
+  --milkdown-slash-menu-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  /* ---- 滚动条 ---- */
+  --milkdown-slash-menu-scrollbar-size: 6px;         /* 滚动条尺寸 */
+
+  /* ---- Grid 布局 ---- */
+  --milkdown-slash-menu-grid-columns: 2;             /* Grid 默认列数 */
+  --milkdown-slash-menu-grid-gap: 4px;               /* Grid 间距 */
+  --milkdown-slash-menu-grid-icon-size: 32px;        /* Grid 图标尺寸 */
+  --milkdown-slash-menu-grid-item-padding: 8px;      /* Grid 菜单项内边距 */
+  --milkdown-slash-menu-grid-item-gap: 6px;          /* Grid 菜单项内部间距 */
+
+  /* ---- Icon Grid 布局 ---- */
+  --milkdown-slash-menu-icon-grid-columns: 5;        /* Icon Grid 默认列数 */
+  --milkdown-slash-menu-icon-grid-size: 28px;        /* Icon Grid 图标尺寸 */
+  --milkdown-slash-menu-icon-grid-gap: 4px;          /* Icon Grid 间距 */
+
+  /* ---- 空状态 ---- */
+  --milkdown-slash-menu-empty-padding: 32px 24px;    /* 空状态内边距 */
+}
+
+/* ============================================
+ * 容器
+ * ============================================ */
+
+.milkdown-slash-menu-container {
+  position: absolute;
+  z-index: var(--milkdown-slash-menu-z-index);
+  padding: var(--milkdown-slash-menu-container-padding);
+}
+
+
+.milkdown-slash-menu-container .icon{
+  fill: currentColor;
+}
+
+
+.milkdown-slash-menu-container[data-show="false"] {
+  display: none;
+}
+
+.milkdown-slash-menu-container[data-show="true"] {
+  display: block;
+  animation: milkdown-slash-menu-fade-in var(--milkdown-slash-menu-transition);
+}
+
+@keyframes milkdown-slash-menu-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+ * 菜单主体
+ * ============================================ */
+
+.milkdown-slash-menu {
+  display: flex;
+  flex-direction: column;
+  background: var(--milkdown-slash-menu-bg);
+  border: 1px solid var(--milkdown-slash-menu-border);
+  border-radius: var(--milkdown-slash-menu-border-radius);
+  box-shadow: var(--milkdown-slash-menu-shadow);
+  width: var(--milkdown-slash-menu-width);
+  max-height: var(--milkdown-slash-menu-max-height);
+  overflow: hidden;
+  color: var(--milkdown-slash-menu-text);
+}
+
+/* 暗色模式 */
+.dark .milkdown-slash-menu {
+  --milkdown-slash-menu-bg: #1e293b;
+  --milkdown-slash-menu-border: #334155;
+  --milkdown-slash-menu-text: #f1f5f9;
+  --milkdown-slash-menu-text-secondary: #94a3b8;
+  --milkdown-slash-menu-hover-bg: #334155;
+  --milkdown-slash-menu-tab-bg: #0f172a;
+}
+
+
+/* ============================================
+ * 标签栏
+ * ============================================ */
+
+.milkdown-slash-menu-tabs {
+  flex-shrink: 0;
+  background: var(--milkdown-slash-menu-tab-bg);
+  border-bottom: 1px solid var(--milkdown-slash-menu-border);
+  padding: var(--milkdown-slash-menu-padding);
+  overflow-x: auto;
+}
+
+.milkdown-slash-menu-tabs::-webkit-scrollbar {
+  height: var(--milkdown-slash-menu-scrollbar-size);
+}
+
+.milkdown-slash-menu-tabs::-webkit-scrollbar-thumb {
+  background: var(--milkdown-slash-menu-border);
+  border-radius: 2px;
+}
+
+.milkdown-slash-menu-tabs ul {
+  display: flex;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.milkdown-slash-menu-tabs li {
+  padding: var(--milkdown-slash-menu-tab-padding);
+  border-radius: var(--milkdown-slash-menu-tab-radius);
+  cursor: pointer;
+  color: var(--milkdown-slash-menu-text-secondary);
+  font-weight: 500;
+  transition: all var(--milkdown-slash-menu-transition);
+}
+
+.milkdown-slash-menu-tabs li:hover {
+  background: var(--milkdown-slash-menu-hover-bg);
+  color: var(--milkdown-slash-menu-text);
+}
+
+.milkdown-slash-menu-tabs li.active {
+  background: var(--milkdown-slash-menu-tab-active);
+  color: #fff;
+}
+
+
+/* ============================================
+ * 滚动区域（包含 content 和 hints）
+ * ============================================ */
+
+.milkdown-slash-menu-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.milkdown-slash-menu-body::-webkit-scrollbar {
+  width: var(--milkdown-slash-menu-scrollbar-size);
+}
+
+.milkdown-slash-menu-body::-webkit-scrollbar-thumb {
+  background: var(--milkdown-slash-menu-border);
+  border-radius: 3px;
+}
+
+/* ============================================
+ * 内容区
+ * ============================================ */
+
+.milkdown-slash-menu-content {
+  flex: 1;
+  padding: var(--milkdown-slash-menu-padding);
+}
+
+/* ============================================
+ * 分组
+ * ============================================ */
+
+.milkdown-slash-menu-group {
+  margin-bottom: var(--milkdown-slash-menu-padding);
+}
+
+.milkdown-slash-menu-group:last-child {
+  margin-bottom: 0;
+}
+
+.milkdown-slash-menu-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--milkdown-slash-menu-text-secondary);
+  margin: 8px 0;
+}
+
+.milkdown-slash-menu-group-label::before {
+  content: "";
+  width: 16px;
+  height: 1px;
+  background: var(--milkdown-slash-menu-border);
+}
+
+.milkdown-slash-menu-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--milkdown-slash-menu-border);
+}
+
+.milkdown-slash-menu-group-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ============================================
+ * 菜单项 (List 布局)
+ * ============================================ */
+
+.milkdown-slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--milkdown-slash-menu-item-gap);
+  padding: var(--milkdown-slash-menu-item-padding);
+  border-radius: var(--milkdown-slash-menu-item-radius);
+  cursor: pointer;
+  color: var(--milkdown-slash-menu-text);
+  transition: all var(--milkdown-slash-menu-transition);
+}
+
+.milkdown-slash-menu-item:hover,
+.milkdown-slash-menu-item.active {
+  background: var(--milkdown-slash-menu-hover-bg);
+}
+
+.milkdown-slash-menu-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.milkdown-slash-menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--milkdown-slash-menu-icon-size);
+  height: var(--milkdown-slash-menu-icon-size);
+  border-radius: var(--milkdown-slash-menu-icon-radius);
+  background: transparent;
+  color: var(--milkdown-slash-menu-text-secondary);
+  flex-shrink: 0;
+}
+
+.milkdown-slash-menu-item-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.milkdown-slash-menu-item.active .milkdown-slash-menu-item-icon,
+.milkdown-slash-menu-item:hover .milkdown-slash-menu-item-icon {
+  background: transparent;
+  color: var(--milkdown-slash-menu-tab-active);
+}
+
+.milkdown-slash-menu-item-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.milkdown-slash-menu-item-desc {
+  font-size: 0.875em;
+  color: var(--milkdown-slash-menu-text-secondary);
+}
+
+
+/* ============================================
+ * Grid 布局
+ * ============================================ */
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-group-items {
+  display: grid;
+  grid-template-columns: repeat(var(--milkdown-slash-menu-grid-columns), 1fr);
+  gap: var(--milkdown-slash-menu-grid-gap);
+}
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item {
+  flex-direction: row;
+  padding: var(--milkdown-slash-menu-grid-item-padding);
+  gap: var(--milkdown-slash-menu-grid-item-gap);
+  min-width: 0;
+}
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item-icon {
+  width: var(--milkdown-slash-menu-grid-icon-size);
+  height: var(--milkdown-slash-menu-grid-icon-size);
+  background: transparent;
+}
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item:hover .milkdown-slash-menu-item-icon,
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item.active .milkdown-slash-menu-item-icon {
+  background: transparent;
+  color: var(--milkdown-slash-menu-tab-active);
+}
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.milkdown-slash-menu-group-grid .milkdown-slash-menu-item-desc {
+  display: none;
+}
+
+
+/* ============================================
+ * Icon Grid 布局
+ * ============================================ */
+
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-group-items {
+  display: grid;
+  grid-template-columns: repeat(var(--milkdown-slash-menu-icon-grid-columns), 1fr);
+  gap: var(--milkdown-slash-menu-icon-grid-gap);
+  justify-items: center;
+}
+
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item {
+  padding: var(--milkdown-slash-menu-grid-item-padding);
+}
+
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item:hover,
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item.active {
+  background: var(--milkdown-slash-menu-hover-bg);
+}
+
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item-icon {
+  width: var(--milkdown-slash-menu-icon-grid-size);
+  height: var(--milkdown-slash-menu-icon-grid-size);
+  background: transparent;
+}
+
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item:hover .milkdown-slash-menu-item-icon,
+.milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-item.active .milkdown-slash-menu-item-icon {
+  background: transparent;
+  color: var(--milkdown-slash-menu-tab-active);
+}
+
+/* ============================================
+ * 空状态
+ * ============================================ */
+
+.milkdown-slash-menu-empty {
+  padding: var(--milkdown-slash-menu-empty-padding);
+  text-align: center;
+  color: var(--milkdown-slash-menu-text-secondary);
+}
+
+
+/* ============================================
+ * 快捷键提示
+ * ============================================ */
+
+.milkdown-slash-menu-hints {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--milkdown-slash-menu-border);
+  background: var(--milkdown-slash-menu-tab-bg);
+  color: var(--milkdown-slash-menu-text-secondary);
+  font-size: 1em;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.milkdown-slash-menu-hints kbd {
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--milkdown-slash-menu-tab-active);
+  color: #fff;
+  font-family: monospace;
+  font-size: 1.2em;
+}
+
+.milkdown-slash-menu-container .milkdown-slash-menu-hints-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--milkdown-slash-menu-text-secondary);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--milkdown-slash-menu-transition);
+}
+
+.milkdown-slash-menu-container .milkdown-slash-menu-hints-toggle svg {
+  width: 100%;
+  height: 100%;
+}
+
+.milkdown-slash-menu-container .milkdown-slash-menu-hints-toggle:hover {
+  background: var(--milkdown-slash-menu-hover-bg);
+  color: var(--milkdown-slash-menu-text);
+}
+
+/* 展开状态的列表样式 */
+.milkdown-slash-menu-hints.expanded {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+.milkdown-slash-menu-hints.expanded .milkdown-slash-menu-hints-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+}
+
+.milkdown-slash-menu-hints-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.milkdown-slash-menu-hints-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--milkdown-slash-menu-border);
+}
+
+.milkdown-slash-menu-hints-item:last-child {
+  border-bottom: none;
+}
+
+.milkdown-slash-menu-hints-item kbd {
+  min-width: 50px;
+  text-align: center;
+}
+
+.milkdown-slash-menu-hints-item span {
+  flex: 1;
+}

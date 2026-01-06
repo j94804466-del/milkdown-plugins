@@ -1,0 +1,142 @@
+/* ============ 容器基础样式 ============ */
+
+.container {
+  margin: 1.5rem 0 1rem !important;
+  padding: 0.5rem !important;
+  border-radius: 8px;
+  border-left: 4px solid;
+  background-color: var(--container-bg);
+  border-color: var(--container-border);
+}
+
+.container-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--container-title-color);
+}
+
+.container-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.container-title-text {
+  flex: 1;
+}
+
+.container-content {
+  color: var(--container-text-color, inherit);
+
+  & p {
+    margin: 0.5rem 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  & pre {
+    margin: 0.5rem 0;
+  }
+}
+
+/* ============ Info 容器 ============ */
+
+.container-info {
+  --container-bg: #e7f3ff;
+  --container-border: #3b82f6;
+  --container-title-color: #1d4ed8;
+}
+
+.dark .container-info {
+  --container-bg: rgba(59, 130, 246, 0.15);
+  --container-border: #60a5fa;
+  --container-title-color: #93c5fd;
+}
+
+/* ============ Tip 容器 ============ */
+
+.container-tip {
+  --container-bg: #ecfdf5;
+  --container-border: #10b981;
+  --container-title-color: #059669;
+}
+
+.dark .container-tip {
+  --container-bg: rgba(16, 185, 129, 0.15);
+  --container-border: #34d399;
+  --container-title-color: #6ee7b7;
+}
+
+/* ============ Warning 容器 ============ */
+
+.container-warning {
+  --container-bg: #fffbeb;
+  --container-border: #f59e0b;
+  --container-title-color: #d97706;
+}
+
+.dark .container-warning {
+  --container-bg: rgba(245, 158, 11, 0.15);
+  --container-border: #fbbf24;
+  --container-title-color: #fcd34d;
+}
+
+/* ============ Danger 容器 ============ */
+
+.container-danger {
+  --container-bg: #fef2f2;
+  --container-border: #ef4444;
+  --container-title-color: #dc2626;
+}
+
+.dark .container-danger {
+  --container-bg: rgba(239, 68, 68, 0.15);
+  --container-border: #f87171;
+  --container-title-color: #fca5a5;
+}
+
+/* ============ Details 容器 ============ */
+
+.container-details {
+  --container-bg: #f9fafb;
+  --container-border: #6b7280;
+  --container-title-color: #374151;
+
+  & > .container-title {
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    & > .container-title-icon {
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &[open] > .container-title > .container-title-icon {
+    transform: rotate(90deg);
+  }
+}
+
+.dark .container-details {
+  --container-bg: rgba(107, 114, 128, 0.15);
+  --container-border: #9ca3af;
+  --container-title-color: #d1d5db;
+}

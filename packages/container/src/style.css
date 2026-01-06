@@ -1,142 +1,162 @@
-/* ============ 容器基础样式 ============ */
+/* ============ CSS Variables ============ */
 
-.container {
-  margin: 1.5rem 0 1rem !important;
-  padding: 0.5rem !important;
-  border-radius: 8px;
-  border-left: 4px solid;
-  background-color: var(--container-bg);
-  border-color: var(--container-border);
+:root {
+  --xz-c-grey-text: #656869;
+  --xz-c-grey-soft: rgb(142 150 170 / 14%);
+  --xz-c-indigo-text: #3451b2;
+  --xz-c-indigo-soft: rgb(100 108 255 / 14%);
+  --xz-c-purple-text: #6f42c1;
+  --xz-c-purple-soft: rgb(159 122 234 / 14%);
+  --xz-c-blue-text: #2888a7;
+  --xz-c-blue-soft: rgb(27 178 229 / 14%);
+  --xz-c-green-text: #18794e;
+  --xz-c-green-soft: rgb(16 185 129 / 14%);
+  --xz-c-yellow-text: #915930;
+  --xz-c-yellow-soft: rgb(234 179 8 / 14%);
+  --xz-c-red-text: #b8272c;
+  --xz-c-red-soft: rgb(244 63 94 / 14%);
 }
 
-.container-title {
+[data-theme=dark] {
+  --xz-c-grey-text: #939499;
+  --xz-c-grey-soft: rgb(101 117 133 / 16%);
+  --xz-c-indigo-text: #a8b1ff;
+  --xz-c-indigo-soft: rgb(100 108 255 / 16%);
+  --xz-c-purple-text: #c8abfa;
+  --xz-c-purple-soft: rgb(159 122 234 / 16%);
+  --xz-c-blue-text: #c9e8f2;
+  --xz-c-blue-soft: rgb(27 178 229 / 16%);
+  --xz-c-green-text: #3dd68c;
+  --xz-c-green-soft: rgb(16 185 129 / 16%);
+  --xz-c-yellow-text: #f9b44e;
+  --xz-c-yellow-soft: rgb(234 179 8 / 16%);
+  --xz-c-red-text: #f66f81;
+  --xz-c-red-soft: rgb(244 63 94 / 16%);
+}
+
+/* ============ Container Base Styles ============ */
+
+.milkdown-container {
+  padding: 8px;
+  border-radius: 8px;
+  margin-block: .75rem;
+  background-color: var(--xz-c-grey-soft);
+}
+
+.milkdown-container-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--container-title-color);
+  transition: background-color .3s ease, color .3s ease;
+  font-size: 0.92em;
+  color: var(--xz-c-grey-text);
 }
 
-.container-title-icon {
+.milkdown-container-title-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
-  & svg {
-    width: 16px;
-    height: 16px;
-  }
+  margin-right: 5px;
+  color: inherit;
 }
 
-.container-title-text {
+.milkdown-container-title-icon svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.milkdown-container-title-text {
   flex: 1;
 }
 
-.container-content {
-  color: var(--container-text-color, inherit);
-
-  & p {
-    margin: 0.5rem 0;
-
-    &:first-child {
-      margin-top: 0;
-    }
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  & pre {
-    margin: 0.5rem 0;
-  }
+.milkdown-container-content {
+  margin-top: 0.5rem;
 }
 
-/* ============ Info 容器 ============ */
+/* ============ Important Container (Purple) ============ */
 
-.container-info {
-  --container-bg: #e7f3ff;
-  --container-border: #3b82f6;
-  --container-title-color: #1d4ed8;
+.milkdown-container.important {
+  background-color: var(--xz-c-purple-soft);
 }
 
-.dark .container-info {
-  --container-bg: rgba(59, 130, 246, 0.15);
-  --container-border: #60a5fa;
-  --container-title-color: #93c5fd;
+.milkdown-container.important .milkdown-container-title {
+  color: var(--xz-c-purple-text);
 }
 
-/* ============ Tip 容器 ============ */
+/* ============ Info Container (Blue) ============ */
 
-.container-tip {
-  --container-bg: #ecfdf5;
-  --container-border: #10b981;
-  --container-title-color: #059669;
+.milkdown-container.info {
+  background-color: var(--xz-c-blue-soft);
 }
 
-.dark .container-tip {
-  --container-bg: rgba(16, 185, 129, 0.15);
-  --container-border: #34d399;
-  --container-title-color: #6ee7b7;
+.milkdown-container.info .milkdown-container-title {
+  color: var(--xz-c-blue-text);
 }
 
-/* ============ Warning 容器 ============ */
+/* ============ Note / Default Container (Grey) ============ */
 
-.container-warning {
-  --container-bg: #fffbeb;
-  --container-border: #f59e0b;
-  --container-title-color: #d97706;
+.milkdown-container.note,
+.milkdown-container.default {
+  background-color: var(--xz-c-grey-soft);
 }
 
-.dark .container-warning {
-  --container-bg: rgba(245, 158, 11, 0.15);
-  --container-border: #fbbf24;
-  --container-title-color: #fcd34d;
+.milkdown-container.note .milkdown-container-title,
+.milkdown-container.default .milkdown-container-title {
+  color: var(--xz-c-grey-text);
 }
 
-/* ============ Danger 容器 ============ */
+/* ============ Tip / Tips Container (Green) ============ */
 
-.container-danger {
-  --container-bg: #fef2f2;
-  --container-border: #ef4444;
-  --container-title-color: #dc2626;
+.milkdown-container.tip,
+.milkdown-container.tips {
+  background-color: var(--xz-c-green-soft);
 }
 
-.dark .container-danger {
-  --container-bg: rgba(239, 68, 68, 0.15);
-  --container-border: #f87171;
-  --container-title-color: #fca5a5;
+.milkdown-container.tip .milkdown-container-title,
+.milkdown-container.tips .milkdown-container-title {
+  color: var(--xz-c-green-text);
 }
 
-/* ============ Details 容器 ============ */
+/* ============ Warning / Warn Container (Yellow) ============ */
 
-.container-details {
-  --container-bg: #f9fafb;
-  --container-border: #6b7280;
-  --container-title-color: #374151;
-
-  & > .container-title {
-    cursor: pointer;
-    list-style: none;
-
-    &::-webkit-details-marker {
-      display: none;
-    }
-
-    & > .container-title-icon {
-      transition: transform 0.2s ease;
-    }
-  }
-
-  &[open] > .container-title > .container-title-icon {
-    transform: rotate(90deg);
-  }
+.milkdown-container.warning,
+.milkdown-container.warn {
+  background-color: var(--xz-c-yellow-soft);
 }
 
-.dark .container-details {
-  --container-bg: rgba(107, 114, 128, 0.15);
-  --container-border: #9ca3af;
-  --container-title-color: #d1d5db;
+.milkdown-container.warning .milkdown-container-title,
+.milkdown-container.warn .milkdown-container-title {
+  color: var(--xz-c-yellow-text);
+}
+
+/* ============ Caution / Danger Container (Red) ============ */
+
+.milkdown-container.caution,
+.milkdown-container.danger {
+  background-color: var(--xz-c-red-soft);
+}
+
+.milkdown-container.caution .milkdown-container-title,
+.milkdown-container.danger .milkdown-container-title {
+  color: var(--xz-c-red-text);
+}
+
+/* ============ Details Container (Indigo) ============ */
+
+.milkdown-container.details {
+  background-color: var(--xz-c-indigo-soft);
+}
+
+.milkdown-container.details .milkdown-container-title {
+  color: var(--xz-c-indigo-text);
+  cursor: pointer;
+}
+
+.milkdown-container.details .milkdown-container-title-icon {
+  transition: transform .3s ease;
+  transform: rotate(90deg);
+}
+
+.milkdown-container.details[open] > .milkdown-container-title > .milkdown-container-title-icon {
+  transform: rotate(180deg);
 }

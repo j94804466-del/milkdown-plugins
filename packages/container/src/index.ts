@@ -1,60 +1,144 @@
 import type { Node } from "@milkdown/kit/prose/model";
 import type { EditorView, NodeView, NodeViewConstructor } from "@milkdown/kit/prose/view";
+import type { MilkdownPlugin } from "@milkdown/kit/ctx";
 
 import { keymap } from "@milkdown/kit/prose/keymap";
-import { TextSelection } from "@milkdown/kit/prose/state";
+import { TextSelection, Plugin } from "@milkdown/kit/prose/state";
 import { $node, $command, $remark, $prose, $view } from "@milkdown/kit/utils";
 import directive from "remark-directive";
+import {
+  importantIcon,
+  infoIcon,
+  noteIcon,
+  tipIcon,
+  warningIcon,
+  cautionIcon,
+  detailsIcon,
+} from "./icons";
 
 // ============ 类型定义 ============
 
-/** 容器类型 */
-export type ContainerType = "info" | "tip" | "warning" | "danger" | "details";
+/** 内置容器类型常量 */
+export const ContainerTypes = {
+  IMPORTANT: "important",
+  INFO: "info",
+  NOTE: "note",
+  TIP: "tip",
+  WARNING: "warning",
+  CAUTION: "caution",
+  DETAILS: "details",
+} as const;
 
-/** 容器类型列表 */
-const CONTAINER_TYPES: readonly ContainerType[] = ["info", "tip", "warning", "danger", "details"];
+/** 容器类型配置 */
+export interface ContainerTypeConfig {
+  /** 容器类型标识（必填） */
+  type: string;
+  /** 默认标题 */
+  title: string;
+  /** 图标 SVG */
+  icon: string;
+  /** 别名列表 */
+  aliases?: string[];
+}
 
-/** 容器类型别名映射 */
-const CONTAINER_TYPE_ALIASES: Record<string, ContainerType> = {
-  warn: "warning",
-  caution: "warning",
-  error: "danger",
-  hint: "tip",
-  note: "info",
-  detail: "details",
-  collapse: "details",
-  collapsible: "details",
-};
+/** 插件配置选项 */
+export interface ContainerPluginOptions {
+  /** 自定义容器类型（会与默认配置合并，相同 type 会覆盖） */
+  types?: ContainerTypeConfig[];
+}
+
+/** 默认容器类型配置 */
+export const defaultContainerTypes: ContainerTypeConfig[] = [
+  { type: ContainerTypes.IMPORTANT, title: "重要", icon: importantIcon, aliases: [] },
+  { type: ContainerTypes.INFO, title: "信息", icon: infoIcon, aliases: ["default"] },
+  { type: ContainerTypes.NOTE, title: "注意", icon: noteIcon, aliases: [] },
+  { type: ContainerTypes.TIP, title: "提示", icon: tipIcon, aliases: ["tips", "hint"] },
+  { type: ContainerTypes.WARNING, title: "警告", icon: warningIcon, aliases: ["warn"] },
+  { type: ContainerTypes.CAUTION, title: "危险", icon: cautionIcon, aliases: ["danger", "error"] },
+  { type: ContainerTypes.DETAILS, title: "详情", icon: detailsIcon, aliases: ["detail", "collapse", "collapsible"] },
+];
+
+// ============ 运行时配置 ============
+
+let containerTypesMap: Map<string, ContainerTypeConfig> = new Map();
+let typeAliasMap: Map<string, string> = new Map();
+let allValidNames: string[] = [];
+
+/** 初始化配置 */
+function initConfig(options?: ContainerPluginOptions) {
+  // 重置
+  containerTypesMap = new Map();
+  typeAliasMap = new Map();
+
+  // 加载默认配置
+  for (const config of defaultContainerTypes) {
+    containerTypesMap.set(config.type, config);
+  }
+
+  // 合并用户配置
+  if (options?.types) {
+    for (const config of options.types) {
+      containerTypesMap.set(config.type, config);
+    }
+  }
+
+  // 构建别名映射
+  for (const [typeName, config] of containerTypesMap) {
+    if (config.aliases) {
+      for (const alias of config.aliases) {
+        typeAliasMap.set(alias, typeName);
+      }
+    }
+  }
+
+  // 构建所有有效名称列表
+  allValidNames = [
+    ...containerTypesMap.keys(),
+    ...typeAliasMap.keys(),
+  ];
+}
+
+// 初始化默认配置
+initConfig();
 
 // ============ 工具函数 ============
 
 /** 解析容器类型（支持别名） */
-function resolveContainerType(name: string): ContainerType | null {
-  if (CONTAINER_TYPES.includes(name as ContainerType)) {
-    return name as ContainerType;
+function resolveContainerType(name: string): string | null {
+  if (containerTypesMap.has(name)) {
+    return name;
   }
-  return CONTAINER_TYPE_ALIASES[name] || null;
+  return typeAliasMap.get(name) || null;
+}
+
+/** 获取容器配置 */
+function getContainerConfig(type: string): ContainerTypeConfig {
+  return containerTypesMap.get(type) || containerTypesMap.get(ContainerTypes.INFO)!;
 }
 
 /** 获取默认标题 */
-function getDefaultTitle(type: ContainerType): string {
-  const titles: Record<ContainerType, string> = {
-    info: "信息",
-    tip: "提示",
-    warning: "警告",
-    danger: "危险",
-    details: "详情",
-  };
-  return titles[type];
+function getDefaultTitle(type: string): string {
+  return getContainerConfig(type).title;
+}
+
+/** 获取图标 */
+function getContainerIcon(type: string): string {
+  return getContainerConfig(type).icon;
+}
+
+/** 获取所有容器类型名称 */
+function getContainerTypeNames(): string[] {
+  return [...containerTypesMap.keys()];
 }
 
 /** 从 DOM 元素提取自定义属性 */
 function extractAttributesFromDOM(element: HTMLElement, excludeAttrs: string[] = []): Record<string, string> {
   const attributes: Record<string, string> = {};
   const excludeSet = new Set(["class", "id", ...excludeAttrs]);
+  const typeNames = getContainerTypeNames();
 
   const classList = Array.from(element.classList).filter(
-    (c) => c !== "container" && !c.startsWith("container-")
+    (c) => c !== "milkdown-container" && !typeNames.includes(c)
   );
   if (classList.length > 0) {
     attributes.class = classList.join(" ");
@@ -110,15 +194,12 @@ function parseAttributesString(attrsStr: string): Record<string, string> {
   return attributes;
 }
 
-// ============ 容器图标 ============
+/** 构建容器类型正则 */
+function buildContainerRegex(): RegExp {
+  const names = allValidNames.join("|");
+  return new RegExp(`^:::(${names})(?:\\[([^\\]]*)\\])?(?:\\{([^}]*)\\})?$`);
+}
 
-const containerIcons: Record<ContainerType, string> = {
-  info: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
-  tip: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>`,
-  warning: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
-  danger: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
-  details: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`,
-};
 
 // ============ Remark 插件 ============
 
@@ -129,13 +210,14 @@ export const remarkDirective = $remark("remarkDirective", () => directive);
 /** 容器标题节点 */
 export const containerTitleSchema = $node("container_title", () => ({
   content: "inline*",
-  group: "block",
   defining: true,
+  isolating: true,
+  disableDropCursor: true,
   parseDOM: [
-    { tag: "div.container-title" },
-    { tag: "summary.container-title" },
+    { tag: "div.milkdown-container-title" },
+    { tag: "summary.milkdown-container-title" },
   ],
-  toDOM: () => ["div", { class: "container-title" }, 0],
+  toDOM: () => ["div", { class: "milkdown-container-title" }, 0],
   parseMarkdown: {
     match: () => false,
     runner: () => {},
@@ -155,10 +237,10 @@ export const containerTitleSchema = $node("container_title", () => ({
 /** 容器内容节点 */
 export const containerContentSchema = $node("container_content", () => ({
   content: "block+",
-  group: "block",
   defining: true,
-  parseDOM: [{ tag: "div.container-content" }],
-  toDOM: () => ["div", { class: "container-content" }, 0],
+  isolating: true,
+  parseDOM: [{ tag: "div.milkdown-container-content" }],
+  toDOM: () => ["div", { class: "milkdown-container-content" }, 0],
   parseMarkdown: {
     match: () => false,
     runner: () => {},
@@ -176,29 +258,31 @@ export const containerSchema = $node("container", (ctx) => ({
   group: "block",
   content: "container_title container_content",
   defining: true,
+  isolating: true,
+  disableDropCursor: true,
   attrs: {
-    type: { default: "info" as ContainerType },
+    type: { default: "info" },
+    originalName: { default: "info" },
     attributes: { default: {} as Record<string, string> },
     open: { default: true },
   },
   parseDOM: [
     {
-      tag: "div.container",
+      tag: "div.milkdown-container",
       getAttrs: (dom) => {
         const element = dom as HTMLElement;
-        const type = CONTAINER_TYPES.find(
-          (t) => element.classList.contains(`container-${t}`)
-        ) ?? "info";
+        const typeNames = getContainerTypeNames();
+        const type = typeNames.find((t) => element.classList.contains(t)) ?? "info";
         const attributes = extractAttributesFromDOM(element);
-        return { type, attributes };
+        return { type, originalName: type, attributes };
       },
     },
     {
-      tag: "details.container",
+      tag: "details.milkdown-container",
       getAttrs: (dom) => {
         const element = dom as HTMLDetailsElement;
         const attributes = extractAttributesFromDOM(element, ["open"]);
-        return { type: "details", attributes, open: element.open };
+        return { type: "details", originalName: "details", attributes, open: element.open };
       },
     },
   ],
@@ -206,7 +290,7 @@ export const containerSchema = $node("container", (ctx) => ({
     const { type, attributes, open } = node.attrs;
     const attrs = attributes as Record<string, string> | undefined;
 
-    const classes = [`container`, `container-${type}`];
+    const classes = [`milkdown-container`, type];
     if (attrs?.class) {
       classes.push(attrs.class);
     }
@@ -237,7 +321,8 @@ export const containerSchema = $node("container", (ctx) => ({
       node.type === "containerDirective" &&
       resolveContainerType(node.name as string) !== null,
     runner: (state, node, type) => {
-      const containerType = resolveContainerType(node.name as string) || "info";
+      const originalName = node.name as string;
+      const containerType = resolveContainerType(originalName) || "info";
       const rawAttrs = node.attributes as Record<string, unknown> | undefined;
       const attributes: Record<string, string> = {};
 
@@ -289,7 +374,7 @@ export const containerSchema = $node("container", (ctx) => ({
         titleText = getDefaultTitle(containerType);
       }
 
-      state.openNode(type, { type: containerType, attributes, open: true });
+      state.openNode(type, { type: containerType, originalName, attributes, open: true });
 
       const titleType = containerTitleSchema.type(ctx);
       state.openNode(titleType);
@@ -314,7 +399,7 @@ export const containerSchema = $node("container", (ctx) => ({
   toMarkdown: {
     match: (node) => node.type.name === "container",
     runner: (state, node) => {
-      const { type, attributes } = node.attrs;
+      const { originalName, attributes } = node.attrs;
 
       let processedAttrs: Record<string, unknown> | undefined;
 
@@ -332,7 +417,7 @@ export const containerSchema = $node("container", (ctx) => ({
       }
 
       state.openNode("containerDirective", undefined, {
-        name: type,
+        name: originalName,
         attributes: processedAttrs,
       } as unknown as Record<string, string>);
 
@@ -355,6 +440,7 @@ export const containerSchema = $node("container", (ctx) => ({
   },
 }));
 
+
 // ============ NodeView 实现 ============
 
 /** Details 容器的 NodeView */
@@ -373,7 +459,7 @@ class DetailsNodeView implements NodeView {
     const attrs = attributes as Record<string, string> | undefined;
 
     this.dom = document.createElement("details");
-    this.dom.className = `container container-details${attrs?.class ? ` ${attrs.class}` : ""}`;
+    this.dom.className = `milkdown-container details${attrs?.class ? ` ${attrs.class}` : ""}`;
     this.dom.open = open;
 
     if (attrs) {
@@ -416,7 +502,7 @@ class DetailsNodeView implements NodeView {
     }
 
     const attrs = node.attrs.attributes as Record<string, string> | undefined;
-    this.dom.className = `container container-details${attrs?.class ? ` ${attrs.class}` : ""}`;
+    this.dom.className = `milkdown-container details${attrs?.class ? ` ${attrs.class}` : ""}`;
 
     const currentAttrs = Array.from(this.dom.attributes).map(a => a.name);
     for (const name of currentAttrs) {
@@ -445,75 +531,16 @@ class DetailsNodeView implements NodeView {
   }
 }
 
-/** 普通容器的 NodeView */
-class ContainerNodeView implements NodeView {
-  dom: HTMLDivElement;
-  contentDOM: HTMLDivElement;
+/** 普通容器不需要自定义 NodeView，使用 schema 的 toDOM */
 
-  constructor(node: Node) {
-    const { type, attributes } = node.attrs;
-    const attrs = attributes as Record<string, string> | undefined;
-
-    const classes = [`container`, `container-${type}`];
-    if (attrs?.class) {
-      classes.push(attrs.class);
-    }
-
-    this.dom = document.createElement("div");
-    this.dom.className = classes.join(" ");
-
-    if (attrs) {
-      for (const [key, value] of Object.entries(attrs)) {
-        if (key === "class") continue;
-        if (value) {
-          this.dom.setAttribute(key, value);
-        }
-      }
-    }
-
-    this.contentDOM = this.dom;
-  }
-
-  update(node: Node): boolean {
-    if (node.type.name !== "container" || node.attrs.type === "details") {
-      return false;
-    }
-
-    const { type, attributes } = node.attrs;
-    const attrs = attributes as Record<string, string> | undefined;
-
-    const classes = [`container`, `container-${type}`];
-    if (attrs?.class) {
-      classes.push(attrs.class);
-    }
-    this.dom.className = classes.join(" ");
-
-    const currentAttrs = Array.from(this.dom.attributes).map(a => a.name);
-    for (const name of currentAttrs) {
-      if (name !== "class") {
-        this.dom.removeAttribute(name);
-      }
-    }
-    if (attrs) {
-      for (const [key, value] of Object.entries(attrs)) {
-        if (key === "class") continue;
-        if (value) {
-          this.dom.setAttribute(key, value);
-        }
-      }
-    }
-
-    return true;
-  }
-}
-
-/** 容器 NodeView 插件 */
+/** 容器 NodeView 插件 - 仅 details 类型需要 */
 export const containerNodeView = $view(containerSchema, (): NodeViewConstructor => {
   return (node, view, getPos) => {
     if (node.attrs.type === "details") {
       return new DetailsNodeView(node, view, getPos);
     }
-    return new ContainerNodeView(node);
+    // 普通容器返回 null，使用默认的 toDOM 渲染
+    return null as unknown as NodeView;
   };
 });
 
@@ -521,40 +548,39 @@ export const containerNodeView = $view(containerSchema, (): NodeViewConstructor 
 export const containerTitleNodeView = $view(containerTitleSchema, (): NodeViewConstructor => {
   return (_node, view, getPos) => {
     const pos = getPos();
-    let containerType: ContainerType = "info";
+    let containerType = "info";
     let isDetails = false;
 
     if (pos !== undefined) {
       const $pos = view.state.doc.resolve(pos);
       const parent = $pos.parent;
       if (parent.type.name === "container") {
-        containerType = parent.attrs.type as ContainerType;
+        containerType = parent.attrs.type as string;
         isDetails = containerType === "details";
       }
     }
 
     const dom = document.createElement(isDetails ? "summary" : "div");
-    dom.className = "container-title";
+    dom.className = "milkdown-container-title";
 
     const iconSpan = document.createElement("span");
-    iconSpan.className = "container-title-icon";
-    iconSpan.innerHTML = containerIcons[containerType];
+    iconSpan.className = "milkdown-container-title-icon";
+    iconSpan.innerHTML = getContainerIcon(containerType);
     dom.appendChild(iconSpan);
 
     const contentDOM = document.createElement("span");
-    contentDOM.className = "container-title-text";
+    contentDOM.className = "milkdown-container-title-text";
     dom.appendChild(contentDOM);
 
     return { dom, contentDOM };
   };
 });
 
+
 // ============ Keymap ============
 
-const containerRegex = /^:::(info|tip|warning|warn|caution|danger|error|details|detail|collapse|collapsible|hint|note)(?:\[([^\]]*)])?(?:\{([^}]*)})?$/;
-
 /** 容器快捷键插件 */
-export const containerKeymap = $prose((ctx) => {
+export const containerKeymap = $prose(() => {
   return keymap({
     Enter: (state, dispatch) => {
       const { $from } = state.selection;
@@ -563,6 +589,7 @@ export const containerKeymap = $prose((ctx) => {
       if (parent.type.name !== "paragraph") return false;
 
       const text = parent.textContent;
+      const containerRegex = buildContainerRegex();
       const match = containerRegex.exec(text);
 
       if (!match) return false;
@@ -571,12 +598,12 @@ export const containerKeymap = $prose((ctx) => {
       const title = match[2]?.trim() || getDefaultTitle(type);
       const attrsStr = match[3] || "";
 
-      const containerType = containerSchema.type(ctx);
-      const titleType = containerTitleSchema.type(ctx);
-      const contentType = containerContentSchema.type(ctx);
+      const containerType = state.schema.nodes.container;
+      const titleType = state.schema.nodes.container_title;
+      const contentType = state.schema.nodes.container_content;
       const paragraph = state.schema.nodes.paragraph;
 
-      if (!paragraph || !dispatch) return false;
+      if (!containerType || !titleType || !contentType || !paragraph || !dispatch) return false;
 
       const start = $from.before($from.depth);
       const end = $from.after($from.depth);
@@ -586,7 +613,7 @@ export const containerKeymap = $prose((ctx) => {
       const titleNode = titleType.create(null, state.schema.text(title));
       const contentNode = contentType.create(null, paragraph.create());
       const containerNode = containerType.create(
-        { type, attributes, open: true },
+        { type, originalName: type, attributes, open: true },
         [titleNode, contentNode]
       );
 
@@ -617,8 +644,8 @@ export const containerKeymap = $prose((ctx) => {
       const indexInContent = $from.index(depth - 1);
       if (indexInContent !== 0) return false;
 
-      const parent = $from.parent;
-      const isEmptyParagraph = parent.type.name === "paragraph" && parent.content.size === 0;
+      const currentParent = $from.parent;
+      const isEmptyParagraph = currentParent.type.name === "paragraph" && currentParent.content.size === 0;
       const hasOnlyOneChild = grandparent.childCount === 1;
 
       if (isEmptyParagraph && hasOnlyOneChild) {
@@ -646,7 +673,7 @@ export const containerKeymap = $prose((ctx) => {
 /** 创建容器命令 */
 export const createContainerCommand = $command(
   "createContainer",
-  (ctx) => (type: ContainerType = "info", title?: string) => {
+  (ctx) => (type: string = "info", title?: string) => {
     return (state, dispatch) => {
       const containerType = containerSchema.type(ctx);
       const titleType = containerTitleSchema.type(ctx);
@@ -659,7 +686,7 @@ export const createContainerCommand = $command(
       const titleNode = titleType.create(null, state.schema.text(titleText));
       const contentNode = contentType.create(null, paragraph.create());
       const containerNode = containerType.create(
-        { type, attributes: {}, open: true },
+        { type, originalName: type, attributes: {}, open: true },
         [titleNode, contentNode]
       );
 
@@ -673,10 +700,98 @@ export const createContainerCommand = $command(
   }
 );
 
+// ============ Drop 处理 ============
+
+/** 阻止拖拽到容器非 content 区域的插件 */
+export const containerDropPlugin = $prose(() => {
+  return new Plugin({
+    // 使用 filterTransaction 来阻止非法的节点插入
+    filterTransaction(tr, state) {
+      // 只检查有实际内容变化的事务
+      if (!tr.docChanged) return true;
+
+      let dominated = false;
+
+      // 检查每个 step
+      tr.steps.forEach((step, index) => {
+        const stepMap = step.getMap();
+        const doc = tr.docs[index];
+
+        stepMap.forEach((oldStart, oldEnd, newStart, newEnd) => {
+          // 检查新插入的位置
+          if (newStart < newEnd && doc) {
+            try {
+              const $pos = tr.doc.resolve(newStart);
+
+              // 遍历所有祖先节点
+              for (let d = $pos.depth; d > 0; d--) {
+                const node = $pos.node(d);
+
+                // 如果插入位置在 container_title 内，阻止
+                if (node.type.name === "container_title") {
+                  // 允许文本编辑，只阻止块级节点插入
+                  const insertedContent = tr.doc.slice(newStart, newEnd);
+                  let hasBlock = false;
+                  insertedContent.content.forEach((n) => {
+                    if (n.isBlock) hasBlock = true;
+                  });
+                  if (hasBlock) {
+                    dominated = true;
+                  }
+                  break;
+                }
+
+                // 如果在 container 内
+                if (node.type.name === "container") {
+                  // 检查是否在 container_content 内
+                  let inContent = false;
+                  for (let dd = $pos.depth; dd > d; dd--) {
+                    if ($pos.node(dd).type.name === "container_content") {
+                      inContent = true;
+                      break;
+                    }
+                  }
+
+                  // 如果不在 content 内，检查是否是块级插入
+                  if (!inContent) {
+                    const insertedContent = tr.doc.slice(newStart, newEnd);
+                    let hasBlock = false;
+                    insertedContent.content.forEach((n) => {
+                      if (n.isBlock) hasBlock = true;
+                    });
+                    if (hasBlock) {
+                      dominated = true;
+                    }
+                  }
+                  break;
+                }
+              }
+            } catch {
+              // 位置解析失败，允许事务
+            }
+          }
+        });
+      });
+
+      return !dominated;
+    },
+  });
+});
+
+// ============ 配置函数 ============
+
+/**
+ * 配置容器插件
+ * @param options 配置选项
+ */
+export function configureContainer(options: ContainerPluginOptions) {
+  initConfig(options);
+}
+
 // ============ 导出 ============
 
 /** 容器插件数组 */
-export const containerPlugin = [
+export const containerPlugin: MilkdownPlugin[] = [
   remarkDirective,
   containerTitleSchema,
   containerContentSchema,
@@ -684,7 +799,11 @@ export const containerPlugin = [
   containerNodeView,
   containerTitleNodeView,
   containerKeymap,
+  containerDropPlugin,
   createContainerCommand,
-];
+] as MilkdownPlugin[];
 
 export default containerPlugin;
+
+// 导出工具函数
+export { getContainerConfig, getContainerIcon, getDefaultTitle };

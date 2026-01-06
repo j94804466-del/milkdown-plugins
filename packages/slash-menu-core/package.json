@@ -9,6 +9,15 @@
     "plugin"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/xiazhi926459/milkdown-plugins.git",
+    "directory": "packages/slash-menu-core"
+  },
+  "homepage": "https://gitee.com/xiazhi926459/milkdown-plugins/tree/master/packages/slash-menu-core",
+  "bugs": {
+    "url": "https://gitee.com/xiazhi926459/milkdown-plugins/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

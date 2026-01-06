@@ -10,6 +10,15 @@
     "admonition"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/xiazhi926459/milkdown-plugins.git",
+    "directory": "packages/container"
+  },
+  "homepage": "https://gitee.com/xiazhi926459/milkdown-plugins/tree/master/packages/container",
+  "bugs": {
+    "url": "https://gitee.com/xiazhi926459/milkdown-plugins/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

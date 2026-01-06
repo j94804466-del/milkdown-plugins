@@ -443,7 +443,7 @@ export const containerSchema = $node("container", (ctx) => ({
 
 // ============ NodeView 实现 ============
 
-/** Details 容器的 NodeView */
+/** Details 容器的 NodeView - 仅处理 toggle 逻辑 */
 class DetailsNodeView implements NodeView {
   dom: HTMLDetailsElement;
   contentDOM: HTMLDetailsElement;
@@ -531,9 +531,7 @@ class DetailsNodeView implements NodeView {
   }
 }
 
-/** 普通容器不需要自定义 NodeView，使用 schema 的 toDOM */
-
-/** 容器 NodeView 插件 - 仅 details 类型需要 */
+/** 容器 NodeView 插件 - 仅 details 类型需要自定义 NodeView */
 export const containerNodeView = $view(containerSchema, (): NodeViewConstructor => {
   return (node, view, getPos) => {
     if (node.attrs.type === "details") {
@@ -544,37 +542,57 @@ export const containerNodeView = $view(containerSchema, (): NodeViewConstructor 
   };
 });
 
-/** 容器标题 NodeView 插件 */
+/** 容器标题 NodeView 插件 - 显示图标 */
 export const containerTitleNodeView = $view(containerTitleSchema, (): NodeViewConstructor => {
   return (_node, view, getPos) => {
-    const pos = getPos();
-    let containerType = "info";
-    let isDetails = false;
-
-    if (pos !== undefined) {
-      const $pos = view.state.doc.resolve(pos);
-      const parent = $pos.parent;
-      if (parent.type.name === "container") {
-        containerType = parent.attrs.type as string;
-        isDetails = containerType === "details";
-      }
-    }
-
-    const dom = document.createElement(isDetails ? "summary" : "div");
+    const dom = document.createElement("div");
     dom.className = "milkdown-container-title";
 
     const iconSpan = document.createElement("span");
     iconSpan.className = "milkdown-container-title-icon";
-    iconSpan.innerHTML = getContainerIcon(containerType);
     dom.appendChild(iconSpan);
 
     const contentDOM = document.createElement("span");
     contentDOM.className = "milkdown-container-title-text";
     dom.appendChild(contentDOM);
 
-    return { dom, contentDOM };
+    // 获取容器类型并设置图标
+    const updateIcon = () => {
+      const pos = getPos();
+      if (pos === undefined) return;
+
+      try {
+        const $pos = view.state.doc.resolve(pos);
+        for (let d = $pos.depth; d >= 0; d--) {
+          const node = $pos.node(d);
+          if (node.type.name === "container") {
+            const containerType = node.attrs.type as string;
+            iconSpan.innerHTML = getContainerIcon(containerType);
+            return;
+          }
+        }
+      } catch {
+        // 位置解析失败
+      }
+      // 默认图标
+      iconSpan.innerHTML = getContainerIcon("info");
+    };
+
+    // 初始设置图标
+    updateIcon();
+
+    return {
+      dom,
+      contentDOM,
+      update: () => {
+        updateIcon();
+        return true;
+      },
+    };
   };
 });
+
+
 
 
 // ============ Keymap ============
@@ -670,28 +688,28 @@ export const containerKeymap = $prose(() => {
 
 // ============ 命令 ============
 
-/** 创建容器命令 */
+/** 创建容器命令 - 替换当前行为容器语法文本，用户回车后触发创建 */
 export const createContainerCommand = $command(
   "createContainer",
-  (ctx) => (type: string = "info", title?: string) => {
+  () => (type: string | string[] = "info", title?: string) => {
     return (state, dispatch) => {
-      const containerType = containerSchema.type(ctx);
-      const titleType = containerTitleSchema.type(ctx);
-      const contentType = containerContentSchema.type(ctx);
-      const paragraph = state.schema.nodes.paragraph;
-
-      if (!paragraph) return false;
-
-      const titleText = title || getDefaultTitle(type);
-      const titleNode = titleType.create(null, state.schema.text(titleText));
-      const contentNode = contentType.create(null, paragraph.create());
-      const containerNode = containerType.create(
-        { type, originalName: type, attributes: {}, open: true },
-        [titleNode, contentNode]
-      );
-
+      // 处理 callCommand 传递数组的情况
+      const actualType = Array.isArray(type) ? type[0] : type;
+      const titleText = title || getDefaultTitle(actualType);
+      const text = `:::${actualType}[${titleText}]`;
+      
       if (dispatch) {
-        const tr = state.tr.replaceSelectionWith(containerNode);
+        const { $from } = state.selection;
+        // 获取当前行的起始和结束位置
+        const lineStart = $from.start();
+        const lineEnd = $from.end();
+        
+        // 替换整行内容
+        const tr = state.tr.replaceWith(
+          lineStart,
+          lineEnd,
+          state.schema.text(text)
+        );
         dispatch(tr.scrollIntoView());
       }
 
@@ -705,12 +723,11 @@ export const createContainerCommand = $command(
 /** 阻止拖拽到容器非 content 区域的插件 */
 export const containerDropPlugin = $prose(() => {
   return new Plugin({
-    // 使用 filterTransaction 来阻止非法的节点插入
-    filterTransaction(tr, state) {
+    filterTransaction(tr) {
       // 只检查有实际内容变化的事务
       if (!tr.docChanged) return true;
 
-      let dominated = false;
+      let blocked = false;
 
       // 检查每个 step
       tr.steps.forEach((step, index) => {
@@ -727,16 +744,15 @@ export const containerDropPlugin = $prose(() => {
               for (let d = $pos.depth; d > 0; d--) {
                 const node = $pos.node(d);
 
-                // 如果插入位置在 container_title 内，阻止
+                // 如果插入位置在 container_title 内，阻止块级节点插入
                 if (node.type.name === "container_title") {
-                  // 允许文本编辑，只阻止块级节点插入
                   const insertedContent = tr.doc.slice(newStart, newEnd);
                   let hasBlock = false;
                   insertedContent.content.forEach((n) => {
                     if (n.isBlock) hasBlock = true;
                   });
                   if (hasBlock) {
-                    dominated = true;
+                    blocked = true;
                   }
                   break;
                 }
@@ -760,7 +776,7 @@ export const containerDropPlugin = $prose(() => {
                       if (n.isBlock) hasBlock = true;
                     });
                     if (hasBlock) {
-                      dominated = true;
+                      blocked = true;
                     }
                   }
                   break;
@@ -773,7 +789,7 @@ export const containerDropPlugin = $prose(() => {
         });
       });
 
-      return !dominated;
+      return !blocked;
     },
   });
 });
@@ -790,7 +806,7 @@ export function configureContainer(options: ContainerPluginOptions) {
 
 // ============ 导出 ============
 
-/** 容器插件数组 */
+/** 容器插件数组 - 完整版 */
 export const containerPlugin: MilkdownPlugin[] = [
   remarkDirective,
   containerTitleSchema,
@@ -800,6 +816,17 @@ export const containerPlugin: MilkdownPlugin[] = [
   containerTitleNodeView,
   containerKeymap,
   containerDropPlugin,
+  createContainerCommand,
+] as MilkdownPlugin[];
+
+/** 容器插件数组 - 精简版（用于调试） */
+export const containerPluginMinimal: MilkdownPlugin[] = [
+  remarkDirective,
+  containerTitleSchema,
+  containerContentSchema,
+  containerSchema,
+  containerTitleNodeView,
+  containerKeymap,
   createContainerCommand,
 ] as MilkdownPlugin[];
 

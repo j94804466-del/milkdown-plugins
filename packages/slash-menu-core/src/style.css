@@ -19,8 +19,8 @@
   --milkdown-slash-menu-z-index: 9999;               /* 层级 */
 
   /* ---- 尺寸 ---- */
-  --milkdown-slash-menu-width: 300px;                /* 菜单宽度 */
-  --milkdown-slash-menu-max-height: 520px;           /* 内容区最大高度 */
+  --milkdown-slash-menu-width: 260px;                /* 菜单宽度 */
+  --milkdown-slash-menu-max-height: 480px;           /* 内容区最大高度 */
   --milkdown-slash-menu-border-radius: 12px;         /* 菜单圆角 */
   --milkdown-slash-menu-item-radius: 8px;            /* 菜单项圆角 */
   --milkdown-slash-menu-icon-size: 28px;             /* 图标容器尺寸 */
@@ -391,25 +391,26 @@
   position: sticky;
   bottom: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
-  gap: 12px;
-  padding: 6px 8px;
+  gap: 8px;
+  padding: 4px 6px;
   border-top: 1px solid var(--milkdown-slash-menu-border);
   background: var(--milkdown-slash-menu-tab-bg);
   color: var(--milkdown-slash-menu-text-secondary);
-  font-size: 1em;
-  flex-wrap: wrap;
+  font-size: 0.85em;
+  flex-wrap: nowrap;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .milkdown-slash-menu-hints kbd {
-  padding: 2px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
   background: var(--milkdown-slash-menu-tab-active);
   color: #fff;
   font-family: monospace;
-  font-size: 1.2em;
+  font-size: 1em;
 }
 
 .milkdown-slash-menu-container .milkdown-slash-menu-hints-toggle {

@@ -807,3 +807,14 @@ export default containerPlugin;
 
 // 导出工具函数
 export { getContainerConfig, getContainerIcon, getDefaultTitle };
+
+// 导出图标
+export {
+  importantIcon,
+  infoIcon,
+  noteIcon,
+  tipIcon,
+  warningIcon,
+  cautionIcon,
+  detailsIcon,
+} from "./icons";

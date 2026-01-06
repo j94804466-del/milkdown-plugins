@@ -1,6 +1,6 @@
 {
   "name": "@xz-summer/milkdown-slash-menu-react",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "React renderer for @xz-summer/milkdown-slash-menu | 斜杠菜单的 React 渲染器",
   "keywords": [
     "milkdown",

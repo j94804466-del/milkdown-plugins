@@ -108,10 +108,22 @@ configureSlashMenu(ctx, {
   // Language, default "zh-CN"
   locale: "en",  // "zh-CN" | "en"
   
-  // Custom labels (override built-in labels)
+  // i18n configuration (grouped by language)
   i18n: {
-    h1: "Big Heading",
-    noResults: "Nothing found",
+    "zh-CN": {
+      groups: { basic: "基础块" },
+      items: { 
+        h1: { label: "大标题", desc: "文章主标题" } 
+      },
+      ui: { noResults: "没有找到" }
+    },
+    "en": {
+      groups: { basic: "Basic Blocks" },
+      items: { 
+        h1: { label: "Big Heading", desc: "Main title" } 
+      },
+      ui: { noResults: "Nothing found" }
+    }
   },
   
   // Whether to register default menu items, default true
@@ -141,6 +153,77 @@ configureSlashMenu(ctx, {
 });
 ```
 
+### i18n Configuration Structure
+
+```typescript
+// i18n configuration type
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
+}
+
+interface LocaleConfig {
+  // Group labels
+  groups?: Record<string, string>;
+  // Menu items (label + description)
+  items?: Record<string, { label?: string; desc?: string }>;
+  // UI text
+  ui?: {
+    noResults?: string;
+    navigate?: string;
+    select?: string;
+    close?: string;
+    switchGroup?: string;
+    firstItem?: string;
+    lastItem?: string;
+    expand?: string;
+    collapse?: string;
+  };
+}
+```
+
+### i18n Usage Example
+
+```typescript
+configureSlashMenu(ctx, {
+  locale: "en",
+  i18n: {
+    "en": {
+      groups: {
+        basic: "Basic Blocks",
+        containers: "Containers",  // Custom group
+      },
+      items: {
+        text: { label: "Paragraph", desc: "Plain text paragraph" },
+        h1: { label: "Big Heading", desc: "Main article title" },
+        // Override label only
+        h2: { label: "Medium Heading" },
+        // Override description only
+        h3: { desc: "Subsection heading" },
+        // Custom menu item
+        "container-info": { label: "Info Box", desc: "Information callout" },
+      },
+      ui: {
+        noResults: "No matches found",
+      }
+    },
+    "zh-CN": {
+      groups: {
+        basic: "基础块",
+        containers: "容器",
+      },
+      items: {
+        text: { label: "段落", desc: "普通段落文本" },
+        h1: { label: "大标题", desc: "文章主标题" },
+        "container-info": { label: "信息框", desc: "信息提示" },
+      },
+      ui: {
+        noResults: "没有找到匹配项",
+      }
+    }
+  }
+});
+```
+
 ## Menu Registry API
 
 ### Get Registry
@@ -161,12 +244,14 @@ registry.registerGroup({
   label: "Custom",
   layout: "list",      // "list" | "grid" | "icon-grid"
   columns: 2,          // Max columns (grid/icon-grid only), auto-wraps when space is insufficient
+  showDescription: true, // Show description (list layout only), default false
   priority: 50,        // Sort weight, higher = first
   items: [
     {
       id: "custom-item",
       label: "Custom Item",
       icon: "<svg>...</svg>",
+      description: "This is description text",
       keywords: ["custom", "item"],
       action: (ctx) => {
         // Execute action
@@ -438,6 +523,80 @@ api.show(cursorPosition);
 
 // Hide menu
 api.hide();
+```
+
+## TypeScript Types
+
+```typescript
+// Menu item configuration
+interface MenuItemConfig {
+  id: string;
+  label: string;
+  keywords?: string[];
+  icon?: string;
+  description?: string;
+  disabled?: boolean;
+  action: (ctx: Ctx) => void;
+  priority?: number;
+  meta?: Record<string, unknown>;
+  renderItem?: (props: ItemRenderProps) => unknown;
+}
+
+// Group configuration
+interface MenuGroupConfig {
+  id: string;
+  label: string;
+  layout?: "list" | "grid" | "icon-grid";
+  columns?: number;           // Max columns, auto-wraps when space is insufficient
+  showDescription?: boolean;  // Show description (list layout only), default false
+  priority?: number;
+  meta?: Record<string, unknown>;
+  items?: MenuItemConfig[];
+  renderGroup?: (props: GroupRenderProps) => unknown;
+}
+
+// i18n configuration
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
+}
+
+interface LocaleConfig {
+  groups?: Record<string, string>;
+  items?: Record<string, { label?: string; desc?: string }>;
+  ui?: Partial<UILabels>;
+}
+
+// Menu state
+interface MenuState {
+  groups: RuntimeMenuGroup[];
+  activeIndex: number;
+  filter: string;
+  totalCount: number;
+  show: boolean;
+}
+
+// Render Props
+interface ItemRenderProps {
+  item: RuntimeMenuItem;
+  isActive: boolean;
+  onSelect: () => void;
+  onHover: () => void;
+}
+
+interface GroupRenderProps {
+  group: RuntimeMenuGroup;
+  activeIndex: number;
+  onSelect: (index: number) => void;
+  onHover: (index: number) => void;
+  defaultRender: () => unknown;
+}
+
+interface MenuRenderProps {
+  state: MenuState;
+  callbacks: MenuCallbacks;
+  slots?: MenuSlots;
+  defaultRender: () => unknown;
+}
 ```
 
 ## License

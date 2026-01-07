@@ -108,10 +108,22 @@ configureSlashMenu(ctx, {
   // 语言，默认 "zh-CN"
   locale: "zh-CN",  // "zh-CN" | "en"
   
-  // 自定义标签（覆盖内置标签）
+  // i18n 配置（按语言分组）
   i18n: {
-    h1: "大标题",
-    noResults: "没有找到",
+    "zh-CN": {
+      groups: { basic: "基础块" },
+      items: { 
+        h1: { label: "大标题", desc: "文章主标题" } 
+      },
+      ui: { noResults: "没有找到" }
+    },
+    "en": {
+      groups: { basic: "Basic Blocks" },
+      items: { 
+        h1: { label: "Big Heading", desc: "Main title" } 
+      },
+      ui: { noResults: "Nothing found" }
+    }
   },
   
   // 是否注册默认菜单项，默认 true
@@ -141,43 +153,75 @@ configureSlashMenu(ctx, {
 });
 ```
 
-### 内置标签 (BuiltinLabels)
+### i18n 配置结构
 
 ```typescript
-interface BuiltinLabels {
-  // 分组标签
-  basicGroup: string;
-  advancedGroup: string;
-  
-  // 菜单项标签
-  text: string;
-  h1: string;
-  h2: string;
-  h3: string;
-  h4: string;
-  h5: string;
-  h6: string;
-  quote: string;
-  divider: string;
-  bulletList: string;
-  orderedList: string;
-  taskList: string;
-  image: string;
-  code: string;
-  table: string;
-  math: string;
-  
-  // UI 文本
-  noResults: string;
-  navigate: string;
-  select: string;
-  close: string;
-  switchGroup: string;
-  firstItem: string;
-  lastItem: string;
-  expand: string;
-  collapse: string;
+// i18n 配置类型
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
 }
+
+interface LocaleConfig {
+  // 分组标签
+  groups?: Record<string, string>;
+  // 菜单项（标签 + 描述）
+  items?: Record<string, { label?: string; desc?: string }>;
+  // UI 文本
+  ui?: {
+    noResults?: string;
+    navigate?: string;
+    select?: string;
+    close?: string;
+    switchGroup?: string;
+    firstItem?: string;
+    lastItem?: string;
+    expand?: string;
+    collapse?: string;
+  };
+}
+```
+
+### i18n 使用示例
+
+```typescript
+configureSlashMenu(ctx, {
+  locale: "zh-CN",
+  i18n: {
+    "zh-CN": {
+      groups: {
+        basic: "基础块",
+        containers: "容器",  // 自定义分组
+      },
+      items: {
+        text: { label: "段落", desc: "普通段落文本" },
+        h1: { label: "大标题", desc: "文章主标题" },
+        // 只覆盖标签
+        h2: { label: "中标题" },
+        // 只覆盖描述
+        h3: { desc: "小节标题" },
+        // 自定义菜单项
+        "container-info": { label: "信息框", desc: "信息提示" },
+      },
+      ui: {
+        noResults: "没有找到匹配项",
+      }
+    },
+    "en": {
+      groups: {
+        basic: "Basic",
+        containers: "Containers",
+      },
+      items: {
+        text: { label: "Paragraph", desc: "Plain text" },
+        h1: { label: "Heading 1", desc: "Main title" },
+        "container-info": { label: "Info", desc: "Information callout" },
+      },
+      ui: {
+        noResults: "No matches found",
+      }
+    }
+  }
+});
 ```
 
 ## 菜单注册表 API
@@ -200,12 +244,14 @@ registry.registerGroup({
   label: "自定义",
   layout: "list",      // "list" | "grid" | "icon-grid"
   columns: 2,          // 最大列数（仅 grid/icon-grid 布局有效），空间不足时自动换行
+  showDescription: true, // 是否显示描述（仅 list 布局有效），默认 false
   priority: 50,        // 排序权重，越大越靠前
   items: [
     {
       id: "custom-item",
       label: "自定义项",
       icon: "<svg>...</svg>",
+      description: "这是描述文本",
       keywords: ["custom", "自定义", "zidingyi"],
       action: (ctx) => {
         // 执行操作
@@ -643,11 +689,23 @@ interface MenuGroupConfig {
   id: string;
   label: string;
   layout?: "list" | "grid" | "icon-grid";
-  columns?: number;  // 最大列数，空间不足时自动换行
+  columns?: number;           // 最大列数，空间不足时自动换行
+  showDescription?: boolean;  // 是否显示描述（仅 list 布局有效），默认 false
   priority?: number;
   meta?: Record<string, unknown>;
   items?: MenuItemConfig[];
   renderGroup?: (props: GroupRenderProps) => unknown;
+}
+
+// i18n 配置
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
+}
+
+interface LocaleConfig {
+  groups?: Record<string, string>;
+  items?: Record<string, { label?: string; desc?: string }>;
+  ui?: Partial<UILabels>;
 }
 
 // 菜单状态

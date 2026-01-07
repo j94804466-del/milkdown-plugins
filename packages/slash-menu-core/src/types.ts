@@ -30,12 +30,45 @@ export interface MenuGroupConfig {
   label: string;
   layout?: LayoutType;
   columns?: number;
+  /** 是否显示描述（仅 list 布局有效），默认 false */
+  showDescription?: boolean;
   priority?: number;
   meta?: Record<string, unknown>;
   items?: MenuItemConfig[];
   /** 自定义分组渲染 */
   renderGroup?: (props: GroupRenderProps) => unknown;
 }
+
+// ============ i18n 类型 ============
+
+/** 菜单项 i18n 配置 */
+export interface ItemI18n {
+  label?: string;
+  desc?: string;
+}
+
+/** 单语言配置 */
+export interface LocaleConfig {
+  /** 分组标签 */
+  groups?: Record<string, string>;
+  /** 菜单项标签和描述 */
+  items?: Record<string, ItemI18n>;
+  /** UI 文本 */
+  ui?: {
+    noResults?: string;
+    navigate?: string;
+    select?: string;
+    close?: string;
+    switchGroup?: string;
+    firstItem?: string;
+    lastItem?: string;
+    expand?: string;
+    collapse?: string;
+  };
+}
+
+/** i18n 配置：语言 -> 配置 */
+export type SlashMenuI18n = Record<string, LocaleConfig>;
 
 /** 菜单分组（内部存储） */
 export interface MenuGroup extends Omit<MenuGroupConfig, "items"> {}

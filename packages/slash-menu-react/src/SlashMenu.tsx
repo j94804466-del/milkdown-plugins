@@ -11,7 +11,6 @@ import type {
 
 import {
   CLASS_NAMES,
-  DEFAULT_GRID_COLUMNS,
   getLayoutClassName,
   isIconOnlyLayout,
   expandIcon,
@@ -159,6 +158,7 @@ export interface DefaultMenuItemProps {
   item: RuntimeMenuItem;
   isActive: boolean;
   iconOnly: boolean;
+  showDescription?: boolean;
   onSelect: () => void;
   onHover: (e: React.PointerEvent) => void;
 }
@@ -167,6 +167,7 @@ export const DefaultMenuItem: React.FC<DefaultMenuItemProps> = ({
   item, 
   isActive, 
   iconOnly,
+  showDescription = false,
   onSelect, 
   onHover 
 }) => {
@@ -190,12 +191,12 @@ export const DefaultMenuItem: React.FC<DefaultMenuItemProps> = ({
         />
       )}
       {!iconOnly && (
-        <>
+        <div className={CLASS_NAMES.itemContent}>
           <span className={CLASS_NAMES.itemLabel}>{item.label}</span>
-          {item.description && (
+          {showDescription && item.description && (
             <span className={CLASS_NAMES.itemDesc}>{item.description}</span>
           )}
-        </>
+        </div>
       )}
     </li>
   );
@@ -207,6 +208,7 @@ interface MenuItemRendererProps {
   item: RuntimeMenuItem;
   isActive: boolean;
   iconOnly: boolean;
+  showDescription?: boolean;
   onSelect: (index: number) => void;
   onHover: (index: number, e: React.PointerEvent) => void;
 }
@@ -215,6 +217,7 @@ const MenuItemRenderer: React.FC<MenuItemRendererProps> = ({
   item,
   isActive,
   iconOnly,
+  showDescription = false,
   onSelect,
   onHover,
 }) => {
@@ -239,6 +242,7 @@ const MenuItemRenderer: React.FC<MenuItemRendererProps> = ({
       item={item}
       isActive={isActive}
       iconOnly={iconOnly}
+      showDescription={showDescription}
       onSelect={handleSelect}
       onHover={handlePointerHover}
     />
@@ -263,10 +267,21 @@ export const DefaultMenuGroup: React.FC<DefaultMenuGroupProps> = ({
   const layoutClass = getLayoutClassName(group.layout);
   const iconOnly = isIconOnlyLayout(group.layout);
   const labelId = `slash-menu-group-label-${group.id}`;
+  // 只有 list 布局才支持显示描述
+  const showDescription = group.layout === "list" && group.showDescription === true;
 
-  const gridStyle = group.layout === "grid"
-    ? { "--milkdown-slash-menu-grid-columns": group.columns ?? DEFAULT_GRID_COLUMNS } as React.CSSProperties
-    : undefined;
+  // 根据布局类型设置对应的 CSS 变量
+  const gridStyle = React.useMemo((): React.CSSProperties | undefined => {
+    if (group.columns === undefined) return undefined;
+    
+    if (group.layout === "grid") {
+      return { "--milkdown-slash-menu-grid-columns": group.columns } as React.CSSProperties;
+    }
+    if (group.layout === "icon-grid") {
+      return { "--milkdown-slash-menu-icon-grid-columns": group.columns } as React.CSSProperties;
+    }
+    return undefined;
+  }, [group.layout, group.columns]);
 
   return (
     <div 
@@ -286,6 +301,7 @@ export const DefaultMenuGroup: React.FC<DefaultMenuGroupProps> = ({
             item={item}
             isActive={activeIndex === item.index}
             iconOnly={iconOnly}
+            showDescription={showDescription}
             onSelect={onSelect}
             onHover={onHover}
           />

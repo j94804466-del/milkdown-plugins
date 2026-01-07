@@ -8,8 +8,7 @@ import {
   type ConfigureSlashMenuOptions,
   type MenuRenderProps,
   type MenuSlots,
-  type LocaleType,
-  type BuiltinLabels,
+  type SlashMenuI18n,
 } from "@xz-summer/milkdown-slash-menu-core";
 
 import { createVueRenderer, type VueRendererOptions } from "./renderer";
@@ -41,6 +40,8 @@ export interface VueSlashMenuOptions extends Omit<ConfigureSlashMenuOptions, "re
   };
   /** 是否显示快捷键提示，默认 true */
   showShortcutHints?: boolean;
+  /** i18n 配置 */
+  i18n?: SlashMenuI18n;
 }
 
 // ============ 便捷配置函数 ============

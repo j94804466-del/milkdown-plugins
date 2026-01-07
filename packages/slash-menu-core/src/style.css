@@ -288,13 +288,20 @@
   color: var(--milkdown-slash-menu-tab-active);
 }
 
-.milkdown-slash-menu-item-label {
+.milkdown-slash-menu-item-content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.milkdown-slash-menu-item-label {
   font-weight: 500;
 }
 
 .milkdown-slash-menu-item-desc {
-  font-size: 0.875em;
+  font-size: 0.75em;
   color: var(--milkdown-slash-menu-text-secondary);
 }
 
@@ -305,7 +312,16 @@
 
 .milkdown-slash-menu-group-grid .milkdown-slash-menu-group-items {
   display: grid;
-  grid-template-columns: repeat(var(--milkdown-slash-menu-grid-columns), 1fr);
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      max(
+        calc(100% / var(--milkdown-slash-menu-grid-columns) - var(--milkdown-slash-menu-grid-gap)),
+        calc(var(--milkdown-slash-menu-grid-icon-size) + var(--milkdown-slash-menu-grid-item-padding) * 2 + 40px)
+      ),
+      1fr
+    )
+  );
   gap: var(--milkdown-slash-menu-grid-gap);
 }
 
@@ -346,7 +362,16 @@
 
 .milkdown-slash-menu-group-icon-grid .milkdown-slash-menu-group-items {
   display: grid;
-  grid-template-columns: repeat(var(--milkdown-slash-menu-icon-grid-columns), 1fr);
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      max(
+        calc(100% / var(--milkdown-slash-menu-icon-grid-columns) - var(--milkdown-slash-menu-icon-grid-gap)),
+        calc(var(--milkdown-slash-menu-icon-grid-size) + var(--milkdown-slash-menu-grid-item-padding) * 2)
+      ),
+      1fr
+    )
+  );
   gap: var(--milkdown-slash-menu-icon-grid-gap);
   justify-items: center;
 }

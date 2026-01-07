@@ -160,7 +160,7 @@ registry.registerGroup({
   id: "custom",
   label: "Custom",
   layout: "list",      // "list" | "grid" | "icon-grid"
-  columns: 2,          // Grid columns
+  columns: 2,          // Max columns (grid/icon-grid only), auto-wraps when space is insufficient
   priority: 50,        // Sort weight, higher = first
   items: [
     {
@@ -404,8 +404,8 @@ All CSS variables use `--milkdown-slash-menu-` prefix:
   --milkdown-slash-menu-icon-size: 28px;
 
   /* Grid Layout */
-  --milkdown-slash-menu-grid-columns: 2;
-  --milkdown-slash-menu-icon-grid-columns: 5;
+  --milkdown-slash-menu-grid-columns: 2;       /* Default max columns for grid layout */
+  --milkdown-slash-menu-icon-grid-columns: 5;  /* Default max columns for icon-grid layout */
 
   /* Animation */
   --milkdown-slash-menu-transition: 0.15s ease;

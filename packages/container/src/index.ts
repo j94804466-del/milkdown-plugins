@@ -697,13 +697,13 @@ export const createContainerCommand = $command(
       const actualType = Array.isArray(type) ? type[0] : type;
       const titleText = title || getDefaultTitle(actualType);
       const text = `:::${actualType}[${titleText}]`;
-      
+
       if (dispatch) {
         const { $from } = state.selection;
         // 获取当前行的起始和结束位置
         const lineStart = $from.start();
         const lineEnd = $from.end();
-        
+
         // 替换整行内容
         const tr = state.tr.replaceWith(
           lineStart,
@@ -816,17 +816,6 @@ export const containerPlugin: MilkdownPlugin[] = [
   containerTitleNodeView,
   containerKeymap,
   containerDropPlugin,
-  createContainerCommand,
-] as MilkdownPlugin[];
-
-/** 容器插件数组 - 精简版（用于调试） */
-export const containerPluginMinimal: MilkdownPlugin[] = [
-  remarkDirective,
-  containerTitleSchema,
-  containerContentSchema,
-  containerSchema,
-  containerTitleNodeView,
-  containerKeymap,
   createContainerCommand,
 ] as MilkdownPlugin[];
 

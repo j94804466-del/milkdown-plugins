@@ -11,7 +11,6 @@ import type {
 
 import {
   CLASS_NAMES,
-  DEFAULT_GRID_COLUMNS,
   getLayoutClassName,
   isIconOnlyLayout,
   expandIcon,
@@ -144,6 +143,7 @@ export const DefaultMenuItem = defineComponent({
     item: { type: Object as PropType<RuntimeMenuItem>, required: true },
     isActive: { type: Boolean, required: true },
     iconOnly: { type: Boolean, required: true },
+    showDescription: { type: Boolean, default: false },
     onItemSelect: { type: Function as PropType<() => void>, required: true },
     onItemHover: { type: Function as PropType<(e: PointerEvent) => void>, required: true },
   },
@@ -167,10 +167,10 @@ export const DefaultMenuItem = defineComponent({
           innerHTML: props.item.icon,
           "aria-hidden": "true",
         }),
-        !props.iconOnly && [
+        !props.iconOnly && h("div", { class: CLASS_NAMES.itemContent }, [
           h("span", { class: CLASS_NAMES.itemLabel }, props.item.label),
-          props.item.description && h("span", { class: CLASS_NAMES.itemDesc }, props.item.description),
-        ],
+          props.showDescription && props.item.description && h("span", { class: CLASS_NAMES.itemDesc }, props.item.description),
+        ]),
       ]
     );
   },
@@ -185,6 +185,7 @@ const MenuItemRenderer = defineComponent({
     item: { type: Object as PropType<RuntimeMenuItem>, required: true },
     isActive: { type: Boolean, required: true },
     iconOnly: { type: Boolean, required: true },
+    showDescription: { type: Boolean, default: false },
     onSelect: { type: Function as PropType<(index: number) => void>, required: true },
     onHover: { type: Function as PropType<(index: number, e: PointerEvent) => void>, required: true },
   },
@@ -207,6 +208,7 @@ const MenuItemRenderer = defineComponent({
         item: props.item,
         isActive: props.isActive,
         iconOnly: props.iconOnly,
+        showDescription: props.showDescription,
         onItemSelect: handleSelect,
         onItemHover: handlePointerHover,
       });
@@ -228,9 +230,17 @@ export const DefaultMenuGroup = defineComponent({
     const layoutClass = computed(() => getLayoutClassName(props.group.layout));
     const iconOnly = computed(() => isIconOnlyLayout(props.group.layout));
     const labelId = computed(() => `slash-menu-group-label-${props.group.id}`);
+    // 只有 list 布局才支持显示描述
+    const showDescription = computed(() => props.group.layout === "list" && props.group.showDescription === true);
+    // 根据布局类型设置对应的 CSS 变量
     const gridStyle = computed<CSSProperties | undefined>(() => {
+      if (props.group.columns === undefined) return undefined;
+      
       if (props.group.layout === "grid") {
-        return { "--milkdown-slash-menu-grid-columns": props.group.columns ?? DEFAULT_GRID_COLUMNS } as CSSProperties;
+        return { "--milkdown-slash-menu-grid-columns": props.group.columns } as CSSProperties;
+      }
+      if (props.group.layout === "icon-grid") {
+        return { "--milkdown-slash-menu-icon-grid-columns": props.group.columns } as CSSProperties;
       }
       return undefined;
     });
@@ -257,6 +267,7 @@ export const DefaultMenuGroup = defineComponent({
               item,
               isActive: props.activeIndex === item.index,
               iconOnly: iconOnly.value,
+              showDescription: showDescription.value,
               onSelect: props.onSelect,
               onHover: props.onHover,
             })

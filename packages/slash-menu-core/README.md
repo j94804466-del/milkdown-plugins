@@ -199,7 +199,7 @@ registry.registerGroup({
   id: "custom",
   label: "自定义",
   layout: "list",      // "list" | "grid" | "icon-grid"
-  columns: 2,          // grid 布局列数
+  columns: 2,          // 最大列数（仅 grid/icon-grid 布局有效），空间不足时自动换行
   priority: 50,        // 排序权重，越大越靠前
   items: [
     {
@@ -467,8 +467,8 @@ configureSlashMenu(ctx, {
   --milkdown-slash-menu-icon-size: 28px;
 
   /* Grid 布局 */
-  --milkdown-slash-menu-grid-columns: 2;
-  --milkdown-slash-menu-icon-grid-columns: 5;
+  --milkdown-slash-menu-grid-columns: 2;       /* grid 布局默认最大列数 */
+  --milkdown-slash-menu-icon-grid-columns: 5;  /* icon-grid 布局默认最大列数 */
 
   /* 动画 */
   --milkdown-slash-menu-transition: 0.15s ease;
@@ -643,7 +643,7 @@ interface MenuGroupConfig {
   id: string;
   label: string;
   layout?: "list" | "grid" | "icon-grid";
-  columns?: number;
+  columns?: number;  // 最大列数，空间不足时自动换行
   priority?: number;
   meta?: Record<string, unknown>;
   items?: MenuItemConfig[];

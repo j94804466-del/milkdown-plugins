@@ -42,6 +42,7 @@ export const CLASS_NAMES = {
   itemActive: "active",
   itemDisabled: "disabled",
   itemIcon: "milkdown-slash-menu-item-icon",
+  itemContent: "milkdown-slash-menu-item-content",
   itemLabel: "milkdown-slash-menu-item-label",
   itemDesc: "milkdown-slash-menu-item-desc",
 

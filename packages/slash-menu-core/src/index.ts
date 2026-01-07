@@ -28,6 +28,9 @@ export type {
   GroupRenderProps,
   MenuRenderProps,
   MenuSlots,
+  ItemI18n,
+  LocaleConfig,
+  SlashMenuI18n,
 } from "./types";
 
 export type { MenuRegistry } from "./registry";
@@ -37,8 +40,8 @@ export type { DefaultMenuOptions } from "./defaults";
 
 export { menuRegistryCtx, createMenuRegistry } from "./registry";
 export { defaultFilter, filterAndSort, getMatchScore } from "./filter";
-export { getDefaultMenuGroups, getLabels, getUILabels, DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS, BUILTIN_LOCALES, DEFAULT_UI_LABELS } from "./defaults";
-export type { LocaleType, BuiltinLabels, UILabels } from "./defaults";
+export { getDefaultMenuGroups, getLocaleConfig, getUILabels, DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS, BUILTIN_LOCALES, DEFAULT_UI_LABELS } from "./defaults";
+export type { LocaleType, UILabels } from "./defaults";
 export * from "./icons";
 export {
   CLASS_NAMES,
@@ -71,16 +74,17 @@ export const slashMenuPlugins: MilkdownPlugin[] = [
 
 // ============ 配置函数 ============
 
-import type { LocaleType, BuiltinLabels } from "./defaults";
-import { getLabels, getUILabels } from "./defaults";
+import type { LocaleType } from "./defaults";
+import type { SlashMenuI18n } from "./types";
+import { getLocaleConfig, getUILabels } from "./defaults";
 
 export interface ConfigureSlashMenuOptions extends SlashMenuOptions {
   /** 是否注册默认菜单项，默认 true */
   registerDefaults?: boolean;
   /** 语言，默认 "zh-CN" */
   locale?: LocaleType;
-  /** 自定义标签，会覆盖 locale 对应的内置标签 */
-  i18n?: Partial<BuiltinLabels>;
+  /** i18n 配置：语言 -> 配置 */
+  i18n?: SlashMenuI18n;
   /** 默认菜单配置 */
   defaultMenuOptions?: {
     enableImage?: boolean;
@@ -94,19 +98,19 @@ export function configureSlashMenu(ctx: Ctx, options: ConfigureSlashMenuOptions 
   const registry = ctx.get(menuRegistryCtx.key);
   registry.clear();
 
-  // 合并标签
-  const labels = getLabels(locale, i18n);
+  // 获取合并后的语言配置
+  const localeConfig = getLocaleConfig(locale, i18n);
 
   // 注册默认菜单项
   if (registerDefaults) {
     const defaultGroups = getDefaultMenuGroups({
       ...defaultMenuOptions,
-      labels,
+      localeConfig,
     });
     defaultGroups.forEach((group) => registry.registerGroup(group));
   }
 
-  // 获取 UI 标签传递给渲染器（通过 slashOptions 传递）
+  // 获取 UI 标签传递给渲染器
   const uiLabels = getUILabels(locale, i18n);
 
   ctx.set(slashMenu.key, {

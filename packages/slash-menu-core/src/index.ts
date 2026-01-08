@@ -66,7 +66,7 @@ export const slashMenuAPI: $Ctx<SlashMenuAPI, "slashMenuAPICtx"> = $ctx(
   "slashMenuAPICtx"
 );
 
-export const slashMenuPlugins: MilkdownPlugin[] = [
+export const slashMenuPlugin: MilkdownPlugin[] = [
   menuRegistryCtx,
   slashMenuAPI,
   ...slashMenu,

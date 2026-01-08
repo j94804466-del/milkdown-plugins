@@ -1,7 +1,7 @@
 import type { Ctx, MilkdownPlugin } from "@milkdown/kit/ctx";
 
 import {
-  slashMenuPlugins,
+  slashMenuPlugin,
   configureSlashMenu as coreConfigureSlashMenu,
   getUILabels,
   type ConfigureSlashMenuOptions,
@@ -88,7 +88,7 @@ export function useSlashMenu(
   );
 
   return {
-    plugins: slashMenuPlugins,
+    plugins: slashMenuPlugin,
     configure,
   };
 }

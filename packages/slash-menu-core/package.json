@@ -44,10 +44,12 @@
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
-    "@milkdown/kit": ">=7.0.0"
+    "@milkdown/kit": ">=7.0.0",
+    "@floating-ui/dom": ">=1.0.0"
   },
   "devDependencies": {
     "@milkdown/kit": "^7.17.3",
+    "@floating-ui/dom": "^1.6.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },

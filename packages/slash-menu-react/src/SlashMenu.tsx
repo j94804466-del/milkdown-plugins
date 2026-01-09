@@ -288,6 +288,7 @@ export const DefaultMenuGroup: React.FC<DefaultMenuGroupProps> = ({
       className={`${CLASS_NAMES.group} ${layoutClass}`}
       role="group"
       aria-labelledby={labelId}
+      data-group-id={group.id}
     >
       <div id={labelId} className={CLASS_NAMES.groupLabel}>{group.label}</div>
       <ul 
@@ -432,9 +433,9 @@ export const DefaultSlashMenu: React.FC<DefaultSlashMenuProps> = ({
     const isFirstInGroup = currentGroup && activeIndex === currentGroup.range[0];
 
     if (isFirstInGroup) {
-      // 如果是分组第一项，滚动到分组容器（包含标签）
+      // 如果是分组第一项，滚动到分组容器顶部
       const groupEl = target.closest(`.${CLASS_NAMES.group}`);
-      groupEl?.scrollIntoView({ block: "nearest" });
+      groupEl?.scrollIntoView({ block: "start", behavior: "smooth" });
     } else {
       target.scrollIntoView({ block: "nearest" });
     }
@@ -480,6 +481,7 @@ export const DefaultSlashMenu: React.FC<DefaultSlashMenuProps> = ({
       className={CLASS_NAMES.menu} 
       data-show={show} 
       onPointerMove={handlePointerMove}
+      onPointerDown={(e) => e.preventDefault()}
       role="dialog"
       aria-label="Slash menu"
     >

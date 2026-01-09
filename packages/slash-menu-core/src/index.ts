@@ -23,7 +23,7 @@ export type {
   SlashMenuRenderer,
   RendererFactory,
   SlashMenuOptions,
-  PositionOptions,
+  FloatingOptions,
   ItemRenderProps,
   GroupRenderProps,
   MenuRenderProps,

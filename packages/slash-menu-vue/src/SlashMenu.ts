@@ -251,6 +251,7 @@ export const DefaultMenuGroup = defineComponent({
         class: `${CLASS_NAMES.group} ${layoutClass.value}`,
         role: "group",
         "aria-labelledby": labelId.value,
+        "data-group-id": props.group.id,
       },
       [
         h("div", { id: labelId.value, class: CLASS_NAMES.groupLabel }, props.group.label),
@@ -380,9 +381,9 @@ export const DefaultSlashMenu = defineComponent({
       const isFirstInGroup = currentGroup && index === currentGroup.range[0];
 
       if (isFirstInGroup) {
-        // 如果是分组第一项，滚动到分组容器（包含标签）
+        // 如果是分组第一项，滚动到分组容器顶部
         const groupEl = target.closest(`.${CLASS_NAMES.group}`);
-        groupEl?.scrollIntoView({ block: "nearest" });
+        groupEl?.scrollIntoView({ block: "start", behavior: "smooth" });
       } else {
         target.scrollIntoView({ block: "nearest" });
       }
@@ -426,6 +427,7 @@ export const DefaultSlashMenu = defineComponent({
         class: CLASS_NAMES.menu, 
         "data-show": show, 
         onPointermove: handlePointerMove,
+        onPointerdown: (e: PointerEvent) => e.preventDefault(),
         role: "dialog",
         "aria-label": "Slash menu",
       }, [

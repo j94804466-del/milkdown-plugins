@@ -150,6 +150,11 @@ interface ContainerTypeConfig {
   /** 别名列表（可选） */
   aliases?: string[];
 }
+
+interface ContainerPluginOptions {
+  /** 自定义容器类型配置（会与默认配置合并，包括 details） */
+  types?: ContainerTypeConfig[];
+}
 ```
 
 ### 类型常量
@@ -166,6 +171,28 @@ ContainerTypes.TIP        // "tip"
 ContainerTypes.WARNING    // "warning"
 ContainerTypes.CAUTION    // "caution"
 ContainerTypes.DETAILS    // "details"
+```
+
+### 配置 Details
+
+Details 和其他容器类型一样通过 `types` 配置：
+
+```typescript
+import { configureContainer, ContainerTypes, detailsIcon } from "@xz-summer/milkdown-container";
+
+// 自定义折叠图标
+const customDetailsIcon = `<svg>...</svg>`;
+
+configureContainer({
+  types: [
+    {
+      type: ContainerTypes.DETAILS,
+      title: "Click to expand",
+      icon: customDetailsIcon,
+      aliases: ["detail", "collapse", "collapsible", "spoiler"],
+    }
+  ]
+});
 ```
 
 ### 添加新类型的 CSS 样式
@@ -229,6 +256,30 @@ ContainerTypes.DETAILS    // "details"
 }
 ```
 
+## 架构说明
+
+### Details 独立 Schema
+
+`details` 容器使用独立的 Schema 实现，与普通容器分离。原因：
+
+- HTML `<details>` 元素要求 `<summary>` 作为第一个子元素
+- 普通容器使用 `<div>` 结构
+- 如果共用 Schema，会导致 DOM 结构不符合 HTML 规范，浏览器原生折叠功能失效
+
+```
+普通容器结构：
+<div class="milkdown-container info">
+  <div class="milkdown-container-title">标题</div>
+  <div class="milkdown-container-content">内容</div>
+</div>
+
+Details 结构：
+<details class="milkdown-details">
+  <summary class="milkdown-details-summary">标题</summary>
+  <div class="milkdown-details-content">内容</div>
+</details>
+```
+
 ## API 参考
 
 ### 导出内容
@@ -237,12 +288,23 @@ ContainerTypes.DETAILS    // "details"
 // 插件
 export { containerPlugin };           // 插件数组，直接用于 editor.use()
 export { remarkDirective };           // Remark 指令插件
+
+// 普通容器 Schema
 export { containerSchema };           // 容器节点 Schema
 export { containerTitleSchema };      // 容器标题节点 Schema
 export { containerContentSchema };    // 容器内容节点 Schema
-export { containerNodeView };         // 容器 NodeView
 export { containerTitleNodeView };    // 容器标题 NodeView
+
+// Details Schema（独立）
+export { detailsSchema };             // Details 节点 Schema
+export { detailsSummarySchema };      // Details Summary 节点 Schema
+export { detailsContentSchema };      // Details Content 节点 Schema
+export { detailsNodeView };           // Details NodeView
+export { detailsSummaryNodeView };    // Details Summary NodeView
+
+// 通用
 export { containerKeymap };           // 快捷键插件
+export { containerDropPlugin };       // 拖拽过滤插件
 export { createContainerCommand };    // 创建容器命令
 
 // 配置
@@ -254,6 +316,7 @@ export { ContainerTypes };            // 类型常量
 export { getContainerConfig };        // 获取容器配置
 export { getContainerIcon };          // 获取容器图标
 export { getDefaultTitle };           // 获取默认标题
+export { getDetailsConfig };          // 获取 details 配置
 
 // 图标
 export { 

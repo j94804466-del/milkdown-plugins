@@ -46,7 +46,6 @@
 .milkdown-container-title {
   display: flex;
   align-items: center;
-  transition: background-color .3s ease, color .3s ease;
   font-size: 0.92em;
   color: var(--xz-c-grey-text);
 }
@@ -57,7 +56,6 @@
   justify-content: center;
   flex-shrink: 0;
   margin-right: 5px;
-  color: inherit;
 }
 
 .milkdown-container-title-icon svg {
@@ -105,58 +103,81 @@
   color: var(--xz-c-grey-text);
 }
 
-/* ============ Tip / Tips Container (Green) ============ */
+/* ============ Tip Container (Green) ============ */
 
-.milkdown-container.tip,
-.milkdown-container.tips {
+.milkdown-container.tip {
   background-color: var(--xz-c-green-soft);
 }
 
-.milkdown-container.tip .milkdown-container-title,
-.milkdown-container.tips .milkdown-container-title {
+.milkdown-container.tip .milkdown-container-title {
   color: var(--xz-c-green-text);
 }
 
-/* ============ Warning / Warn Container (Yellow) ============ */
+/* ============ Warning Container (Yellow) ============ */
 
-.milkdown-container.warning,
-.milkdown-container.warn {
+.milkdown-container.warning {
   background-color: var(--xz-c-yellow-soft);
 }
 
-.milkdown-container.warning .milkdown-container-title,
-.milkdown-container.warn .milkdown-container-title {
+.milkdown-container.warning .milkdown-container-title {
   color: var(--xz-c-yellow-text);
 }
 
-/* ============ Caution / Danger Container (Red) ============ */
+/* ============ Caution Container (Red) ============ */
 
-.milkdown-container.caution,
-.milkdown-container.danger {
+.milkdown-container.caution {
   background-color: var(--xz-c-red-soft);
 }
 
-.milkdown-container.caution .milkdown-container-title,
-.milkdown-container.danger .milkdown-container-title {
+.milkdown-container.caution .milkdown-container-title {
   color: var(--xz-c-red-text);
 }
 
-/* ============ Details Container (Indigo) ============ */
+/* ============ Details (独立样式) ============ */
 
-.milkdown-container.details {
+.milkdown-details {
+  padding: 8px;
+  border-radius: 8px;
+  margin-block: .75rem;
   background-color: var(--xz-c-indigo-soft);
 }
 
-.milkdown-container.details .milkdown-container-title {
+.milkdown-details-summary {
+  display: flex;
+  align-items: center;
+  font-size: 0.92em;
   color: var(--xz-c-indigo-text);
   cursor: pointer;
+  list-style: none;
 }
 
-.milkdown-container.details .milkdown-container-title-icon {
+.milkdown-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.milkdown-details-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 5px;
   transition: transform .3s ease;
   transform: rotate(90deg);
 }
 
-.milkdown-container.details[open] > .milkdown-container-title > .milkdown-container-title-icon {
+.milkdown-details-summary-icon svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.milkdown-details[open] > .milkdown-details-summary > .milkdown-details-summary-icon {
   transform: rotate(180deg);
+}
+
+.milkdown-details-summary-text {
+  flex: 1;
+}
+
+.milkdown-details-content {
+  margin-top: 0.5rem;
 }

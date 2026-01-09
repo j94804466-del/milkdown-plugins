@@ -170,12 +170,20 @@ export type RendererFactory = () => SlashMenuRenderer;
 
 // ============ 插件配置 ============
 
-/** 位置配置 */
-export interface PositionOptions {
+/** 浮动定位与尺寸配置 */
+export interface FloatingOptions {
   /** 偏移量，默认 10 */
   offset?: number;
   /** 优先方向，默认 "bottom" */
   placement?: "top" | "bottom";
+  /** 菜单宽度，默认 260 */
+  width?: number;
+  /** 菜单最大高度，默认 440 */
+  maxHeight?: number;
+  /** 最小高度，默认 100 */
+  minHeight?: number;
+  /** 距离视口边缘的安全距离，默认 10 */
+  padding?: number;
 }
 
 export interface SlashMenuOptions {
@@ -188,8 +196,8 @@ export interface SlashMenuOptions {
   slots?: MenuSlots;
   /** 是否显示快捷键提示，默认 true */
   showShortcutHints?: boolean;
-  /** 位置配置 */
-  position?: PositionOptions;
+  /** 浮动定位与尺寸配置 */
+  floating?: FloatingOptions;
   /** 内部使用：UI 标签 */
   _uiLabels?: {
     noResults: string;

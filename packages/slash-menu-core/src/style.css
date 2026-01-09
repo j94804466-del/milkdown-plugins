@@ -15,15 +15,12 @@
   --milkdown-slash-menu-tab-active: #3b82f6;         /* 激活标签/图标背景色 */
 
   /* ---- 容器 ---- */
-  --milkdown-slash-menu-container-padding: 10px;     /* 容器内边距 */
   --milkdown-slash-menu-z-index: 9999;               /* 层级 */
 
   /* ---- 尺寸 ---- */
-  --milkdown-slash-menu-width: 260px;                /* 菜单宽度 */
-  --milkdown-slash-menu-max-height: 480px;           /* 内容区最大高度 */
   --milkdown-slash-menu-border-radius: 12px;         /* 菜单圆角 */
   --milkdown-slash-menu-item-radius: 8px;            /* 菜单项圆角 */
-  --milkdown-slash-menu-icon-size: 28px;             /* 图标容器尺寸 */
+  --milkdown-slash-menu-icon-size: 1.5em;             /* 图标容器尺寸 */
   --milkdown-slash-menu-icon-radius: 6px;            /* 图标容器圆角 */
 
   /* ---- 标签栏 ---- */
@@ -32,7 +29,7 @@
 
   /* ---- 间距 ---- */
   --milkdown-slash-menu-padding: 6px;                /* 内容区内边距 */
-  --milkdown-slash-menu-item-padding: 10px 12px;     /* 菜单项内边距 */
+  --milkdown-slash-menu-item-padding: 5px 12px;     /* 菜单项内边距 */
   --milkdown-slash-menu-item-gap: 12px;              /* 菜单项内部间距 */
 
   /* ---- 动画 ---- */
@@ -47,13 +44,13 @@
   /* ---- Grid 布局 ---- */
   --milkdown-slash-menu-grid-columns: 2;             /* Grid 默认列数 */
   --milkdown-slash-menu-grid-gap: 4px;               /* Grid 间距 */
-  --milkdown-slash-menu-grid-icon-size: 32px;        /* Grid 图标尺寸 */
-  --milkdown-slash-menu-grid-item-padding: 8px;      /* Grid 菜单项内边距 */
+  --milkdown-slash-menu-grid-icon-size: 1.5em;        /* Grid 图标尺寸 */
+  --milkdown-slash-menu-grid-item-padding: 4px;      /* Grid 菜单项内边距 */
   --milkdown-slash-menu-grid-item-gap: 6px;          /* Grid 菜单项内部间距 */
 
   /* ---- Icon Grid 布局 ---- */
   --milkdown-slash-menu-icon-grid-columns: 5;        /* Icon Grid 默认列数 */
-  --milkdown-slash-menu-icon-grid-size: 28px;        /* Icon Grid 图标尺寸 */
+  --milkdown-slash-menu-icon-grid-size: 1.5em;        /* Icon Grid 图标尺寸 */
   --milkdown-slash-menu-icon-grid-gap: 4px;          /* Icon Grid 间距 */
 
   /* ---- 空状态 ---- */
@@ -67,7 +64,6 @@
 .milkdown-slash-menu-container {
   position: absolute;
   z-index: var(--milkdown-slash-menu-z-index);
-  padding: var(--milkdown-slash-menu-container-padding);
 }
 
 
@@ -101,8 +97,6 @@
   border: 1px solid var(--milkdown-slash-menu-border);
   border-radius: var(--milkdown-slash-menu-border-radius);
   box-shadow: var(--milkdown-slash-menu-shadow);
-  width: var(--milkdown-slash-menu-width);
-  max-height: var(--milkdown-slash-menu-max-height);
   overflow: hidden;
   color: var(--milkdown-slash-menu-text);
 }
@@ -234,6 +228,9 @@
 }
 
 .milkdown-slash-menu-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   list-style: none;
   margin: 0;
   padding: 0;

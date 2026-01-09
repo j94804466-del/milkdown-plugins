@@ -199,49 +199,6 @@ export function getUILabels(locale: LocaleType = "zh-CN", i18n?: SlashMenuI18n):
 /** 默认 UI 标签 */
 export const DEFAULT_UI_LABELS: UILabels = getUILabels("zh-CN");
 
-// ============ 兼容旧 API（已废弃） ============
-
-/** @deprecated 使用 getLocaleConfig 代替 */
-export interface BuiltinLabels {
-  basicGroup: string;
-  text: string;
-  [key: string]: string;
-}
-
-/** @deprecated 使用 getLocaleConfig 代替 */
-export function getLabels(locale: LocaleType = "zh-CN", _custom?: Partial<BuiltinLabels>): BuiltinLabels {
-  const config = getLocaleConfig(locale);
-  return {
-    basicGroup: config.groups?.[DEFAULT_GROUP_IDS.BASIC] || "基础",
-    advancedGroup: config.groups?.[DEFAULT_GROUP_IDS.ADVANCED] || "高级",
-    text: config.items?.[DEFAULT_ITEM_IDS.TEXT]?.label || "正文",
-    h1: config.items?.[DEFAULT_ITEM_IDS.H1]?.label || "一级标题",
-    h2: config.items?.[DEFAULT_ITEM_IDS.H2]?.label || "二级标题",
-    h3: config.items?.[DEFAULT_ITEM_IDS.H3]?.label || "三级标题",
-    h4: config.items?.[DEFAULT_ITEM_IDS.H4]?.label || "四级标题",
-    h5: config.items?.[DEFAULT_ITEM_IDS.H5]?.label || "五级标题",
-    h6: config.items?.[DEFAULT_ITEM_IDS.H6]?.label || "六级标题",
-    quote: config.items?.[DEFAULT_ITEM_IDS.QUOTE]?.label || "引用",
-    divider: config.items?.[DEFAULT_ITEM_IDS.DIVIDER]?.label || "分割线",
-    bulletList: config.items?.[DEFAULT_ITEM_IDS.BULLET_LIST]?.label || "无序列表",
-    orderedList: config.items?.[DEFAULT_ITEM_IDS.ORDERED_LIST]?.label || "有序列表",
-    taskList: config.items?.[DEFAULT_ITEM_IDS.TASK_LIST]?.label || "任务列表",
-    image: config.items?.[DEFAULT_ITEM_IDS.IMAGE]?.label || "图片",
-    code: config.items?.[DEFAULT_ITEM_IDS.CODE]?.label || "代码块",
-    table: config.items?.[DEFAULT_ITEM_IDS.TABLE]?.label || "表格",
-    math: config.items?.[DEFAULT_ITEM_IDS.MATH]?.label || "数学公式",
-    noResults: config.ui?.noResults || "无匹配结果",
-    navigate: config.ui?.navigate || "导航",
-    select: config.ui?.select || "选择",
-    close: config.ui?.close || "关闭",
-    switchGroup: config.ui?.switchGroup || "切换分组",
-    firstItem: config.ui?.firstItem || "第一项",
-    lastItem: config.ui?.lastItem || "最后一项",
-    expand: config.ui?.expand || "展开",
-    collapse: config.ui?.collapse || "收起",
-  };
-}
-
 import {
   addBlockTypeCommand,
   blockquoteSchema,
@@ -293,7 +250,7 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   const config: LocaleConfig = options.localeConfig ?? BUILTIN_LOCALES["zh-CN"];
   const groups = config.groups || {};
   const items = config.items || {};
-  
+
   const enableImage = options.enableImage ?? true;
   const enableTable = options.enableTable ?? true;
   const enableMath = options.enableMath ?? true;

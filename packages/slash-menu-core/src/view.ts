@@ -3,6 +3,7 @@ import type { EditorView } from "@milkdown/kit/prose/view";
 
 import { SlashProvider } from "@milkdown/kit/plugin/slash";
 import { TextSelection, type Selection } from "@milkdown/kit/prose/state";
+import { size, offset, type Placement, type Middleware } from "@floating-ui/dom";
 
 import type { SlashMenuOptions, RuntimeMenuGroup, RuntimeMenuItem, SlashMenuRenderer, MenuState, MenuCallbacks } from "./types";
 
@@ -34,6 +35,8 @@ export class SlashMenuView {
   private filter = "";
   private show = false;
   private activeIndex = 0;
+  private lockedBottom: number | null = null;
+  private lockedPlacement: 'top' | 'bottom' | null = null;
 
   constructor(ctx: Ctx, view: EditorView, options: SlashMenuOptions) {
     this.ctx = ctx;
@@ -50,7 +53,14 @@ export class SlashMenuView {
 
     const self = this;
     const trigger = options.trigger ?? "/";
-    const positionOffset = options.position?.offset ?? 10;
+    
+    // 浮动配置
+    const floatingOffset = options.floating?.offset ?? 10;
+    const floatingWidth = options.floating?.width ?? 260;
+    const floatingMaxHeight = options.floating?.maxHeight ?? 440;
+    const floatingMinHeight = options.floating?.minHeight ?? 100;
+    const floatingPadding = options.floating?.padding ?? 10;
+    const floatingPlacement: Placement = options.floating?.placement === "top" ? "top-start" : "bottom-start";
 
     this.slashProvider = new SlashProvider({
       content: this.container,
@@ -82,9 +92,119 @@ export class SlashMenuView {
 
         return text.startsWith(trigger);
       },
-      offset: positionOffset,
-      // 挂载到 body，确保 flip() 能正确检测视口边界
+      // 挂载到 body，确保能正确检测视口边界
       root: document.body,
+      // 通过 floatingUIOptions.middleware 完全替换中间件，移除默认的 flip()
+      floatingUIOptions: {
+        placement: floatingPlacement,
+        middleware: [
+          // 自定义 flip：只在首次决定方向，之后锁定
+          {
+            name: 'conditionalFlip',
+            fn(state) {
+              // 如果已经锁定了方向，直接返回锁定的 placement
+              if (self.lockedPlacement !== null) {
+                const lockedPlacementFull = self.lockedPlacement === 'top' ? 'top-start' : 'bottom-start';
+                if (state.placement !== lockedPlacementFull) {
+                  return { reset: { placement: lockedPlacementFull } };
+                }
+                return {};
+              }
+              
+              // 首次：使用 flip 的逻辑检测空间
+              const { rects } = state;
+              const isTop = floatingPlacement.startsWith('top');
+              
+              // 获取视口信息
+              const viewportHeight = window.innerHeight;
+              const referenceTop = rects.reference.y;
+              const referenceBottom = rects.reference.y + rects.reference.height;
+              
+              // 计算上下可用空间
+              const spaceAbove = referenceTop - floatingPadding;
+              const spaceBelow = viewportHeight - referenceBottom - floatingPadding;
+              
+              // 决定方向：优先使用配置的方向，空间不足时选择空间更大的一方
+              let finalPlacement: 'top' | 'bottom';
+              
+              if (isTop) {
+                // 配置为向上
+                if (spaceAbove >= floatingMaxHeight) {
+                  // 上方空间足够 maxHeight，使用上方
+                  finalPlacement = 'top';
+                } else if (spaceBelow > spaceAbove && spaceBelow >= floatingMinHeight) {
+                  // 下方空间更大且足够 minHeight，翻转到下方
+                  finalPlacement = 'bottom';
+                } else {
+                  // 否则使用上方
+                  finalPlacement = 'top';
+                }
+              } else {
+                // 配置为向下
+                if (spaceBelow >= floatingMaxHeight) {
+                  // 下方空间足够 maxHeight，使用下方
+                  finalPlacement = 'bottom';
+                } else if (spaceAbove > spaceBelow && spaceAbove >= floatingMinHeight) {
+                  // 上方空间更大且足够 minHeight，翻转到上方
+                  finalPlacement = 'top';
+                } else {
+                  // 否则使用下方
+                  finalPlacement = 'bottom';
+                }
+              }
+              
+              // 锁定方向
+              self.lockedPlacement = finalPlacement;
+              
+              const finalPlacementFull = finalPlacement === 'top' ? 'top-start' : 'bottom-start';
+              if (state.placement !== finalPlacementFull) {
+                return { reset: { placement: finalPlacementFull } };
+              }
+              return {};
+            }
+          } as Middleware,
+          offset(floatingOffset),
+          size({
+            padding: floatingPadding,
+            apply({ availableHeight, elements, placement }) {
+              const menuEl = elements.floating.querySelector('.milkdown-slash-menu') as HTMLElement | null;
+              if (!menuEl) return;
+              
+              // 设置宽度
+              menuEl.style.width = `${floatingWidth}px`;
+              
+              // 计算高度
+              const available = availableHeight - floatingPadding;
+              const finalHeight = available >= floatingMaxHeight
+                ? floatingMaxHeight
+                : Math.max(available, floatingMinHeight);
+              
+              menuEl.style.maxHeight = `${finalHeight}px`;
+              
+              // 设置 data-placement
+              const isTop = self.lockedPlacement === 'top';
+              menuEl.dataset.placement = isTop ? 'top' : 'bottom';
+              
+              // 向上展开时，锁定底部位置
+              if (isTop) {
+                const container = elements.floating;
+                
+                requestAnimationFrame(() => {
+                  const currentTop = parseFloat(container.style.top) || 0;
+                  const currentHeight = container.offsetHeight;
+                  
+                  if (self.lockedBottom === null) {
+                    self.lockedBottom = currentTop + currentHeight;
+                  } else {
+                    const newTop = self.lockedBottom - currentHeight;
+                    container.style.top = `${newTop}px`;
+                  }
+                });
+              }
+            },
+          }),
+        ],
+      },
     });
 
     this.slashProvider.onShow = () => {
@@ -96,6 +216,8 @@ export class SlashMenuView {
 
     this.slashProvider.onHide = () => {
       this.show = false;
+      this.lockedBottom = null;
+      this.lockedPlacement = null;
       this.options.onClose?.();
       this.render();
     };

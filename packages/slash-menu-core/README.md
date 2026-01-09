@@ -15,6 +15,7 @@
 - 🎛️ **三层自定义** - 菜单项、分组、整体渲染
 - ♿ **无障碍** - 完整 ARIA 属性支持
 - 🔌 **事件钩子** - onOpen、onClose、onSelect、onFilter
+- 📐 **智能定位** - 自适应高度、方向锁定、位置固定点
 
 ## 安装
 
@@ -139,10 +140,14 @@ configureSlashMenu(ctx, {
   // 是否显示快捷键提示，默认 true
   showShortcutHints: true,
   
-  // 位置配置
-  position: {
+  // 浮动定位与尺寸配置
+  floating: {
     offset: 10,           // 偏移量，默认 10
-    placement: "bottom",  // 优先方向，"top" | "bottom"
+    placement: "bottom",  // 优先方向，"top" | "bottom"，默认 "bottom"
+    width: 260,           // 菜单宽度，默认 260
+    maxHeight: 440,       // 最大高度，默认 440（空间不足时自动缩小）
+    minHeight: 100,       // 最小高度，默认 100
+    padding: 10,          // 距离视口边缘的安全距离，默认 10
   },
   
   // 事件钩子
@@ -150,6 +155,91 @@ configureSlashMenu(ctx, {
   onClose: () => console.log("菜单关闭"),
   onSelect: (item) => console.log("选择:", item.label),
   onFilter: (query, results) => console.log("搜索:", query, results.length),
+});
+```
+
+### 浮动定位特性
+
+斜杠菜单使用智能浮动定位系统，具有以下特性：
+
+#### 自适应高度
+
+- `maxHeight` 设置菜单的最大高度（默认 440px）
+- 当可用空间不足时，菜单高度会自动缩小以适应空间
+- 高度不会低于 `minHeight`（默认 100px）
+- 实际高度 = `min(maxHeight, 可用空间 - padding)`
+
+```typescript
+// 示例：限制菜单最大高度为 300px
+configureSlashMenu(ctx, {
+  floating: {
+    maxHeight: 300,
+    minHeight: 80,
+  },
+});
+```
+
+#### 智能方向选择
+
+菜单会根据可用空间智能选择展开方向：
+
+1. 如果配置方向（`placement`）的空间 >= `maxHeight`，使用配置方向
+2. 如果配置方向空间不足 `maxHeight`，但另一方空间更大且 >= `minHeight`，翻转到另一方
+3. 否则使用配置方向（即使空间不足也不翻转）
+
+```
+场景：配置 placement: "bottom"，maxHeight: 440
+
+光标在页面顶部：
+  下方空间 500px >= 440px → 向下展开 ✅
+
+光标在页面中部偏下：
+  下方空间 200px < 440px
+  上方空间 400px > 200px 且 >= 100px → 向上展开 ✅
+
+光标在页面底部：
+  下方空间 50px < 440px
+  上方空间 30px < 50px → 向下展开（配置方向）
+```
+
+#### 方向锁定
+
+- 菜单首次打开时，根据光标位置和可用空间决定展开方向（向上或向下）
+- **同一次打开期间，方向保持锁定**，不会因为过滤后内容减少而翻转
+- 关闭菜单后重新打开会重新计算方向
+
+#### 位置固定点
+
+- **向下展开**：菜单顶部固定在光标位置，内容向下增长
+- **向上展开**：菜单底部固定在光标位置，内容向上增长
+- 过滤内容时，菜单始终以光标位置为固定点收缩/扩展
+
+```
+向下展开 (bottom)          向上展开 (top)
+                          
+光标 ─┬─────────┐          ┌─────────┬─ 光标
+      │ 菜单项1 │          │ 菜单项1 │
+      │ 菜单项2 │          │ 菜单项2 │
+      │ 菜单项3 │          │ 菜单项3 │
+      └─────────┘          └─────────┘
+      ↓ 内容向下增长        ↑ 内容向上增长
+```
+
+#### 配置优先方向
+
+```typescript
+// 优先向上展开（空间不足时自动向下）
+configureSlashMenu(ctx, {
+  floating: {
+    placement: "top",
+  },
+});
+
+// 优先向下展开（默认，空间不足时自动向上）
+configureSlashMenu(ctx, {
+  floating: {
+    placement: "bottom",
+  },
 });
 ```
 
@@ -505,9 +595,7 @@ configureSlashMenu(ctx, {
   --milkdown-slash-menu-tab-bg: #f8fafc;
   --milkdown-slash-menu-tab-active: #3b82f6;
 
-  /* 尺寸 */
-  --milkdown-slash-menu-width: 300px;
-  --milkdown-slash-menu-max-height: 520px;
+  /* 尺寸（宽度和高度通过 floating 配置控制） */
   --milkdown-slash-menu-border-radius: 12px;
   --milkdown-slash-menu-item-radius: 8px;
   --milkdown-slash-menu-icon-size: 28px;

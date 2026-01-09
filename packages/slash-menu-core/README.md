@@ -17,6 +17,10 @@
 - 🔌 **事件钩子** - onOpen、onClose、onSelect、onFilter
 - 📐 **智能定位** - 自适应高度、方向锁定、位置固定点
 
+## 预览
+
+![菜单默认样式](../../img/菜单默认样式.png)
+
 ## 安装
 
 ```bash
@@ -358,6 +362,12 @@ registry.registerItem("basic", {
 });
 ```
 
+![注册新增菜单项](../../img/注册新增菜单项.png)
+
+布局变更效果（icon-grid → list）：
+
+![布局由icon-grid变更为list](../../img/布局由icon-grid变更为list.png)
+
 ### 更新菜单项
 
 ```typescript
@@ -444,6 +454,8 @@ DEFAULT_ITEM_IDS.MATH         // "math"
 ```
 
 ## 自定义渲染
+
+![自定义菜单项及渲染](../../img/自定义菜单项及渲染.png)
 
 ### 自定义菜单项渲染
 

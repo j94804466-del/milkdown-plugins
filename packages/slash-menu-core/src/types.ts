@@ -28,6 +28,8 @@ export interface MenuItem extends MenuItemConfig {
 export interface MenuGroupConfig {
   id: string;
   label: string;
+  /** 分组关键词，会合并到所有子项的搜索词中 */
+  keywords?: string[];
   layout?: LayoutType;
   columns?: number;
   /** 是否显示描述（仅 list 布局有效），默认 false */

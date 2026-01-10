@@ -258,6 +258,7 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   const basicGroup: MenuGroupConfig = {
     id: DEFAULT_GROUP_IDS.BASIC,
     label: groups[DEFAULT_GROUP_IDS.BASIC] || "基础",
+    keywords: ["basic", "基础", "jichu", "jc", "常用", "changyong", "cy"],
     layout: "icon-grid",
     priority: 100,
     items: [
@@ -497,6 +498,7 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   const advancedGroup: MenuGroupConfig = {
     id: DEFAULT_GROUP_IDS.ADVANCED,
     label: groups[DEFAULT_GROUP_IDS.ADVANCED] || "高级",
+    keywords: ["advanced", "高级", "gaoji", "gj", "更多", "gengduo", "gd"],
     layout: "grid",
     columns: 2,
     priority: 80,

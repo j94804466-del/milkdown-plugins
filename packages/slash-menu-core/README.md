@@ -8,7 +8,7 @@
 
 - 🎯 **框架无关** - 核心逻辑与渲染分离
 - 📦 **注册表模式** - 灵活扩展菜单项
-- 🔍 **智能搜索** - 支持拼音、关键词模糊匹配
+- 🔍 **智能搜索** - 支持分组/菜单项标签、关键词、拼音模糊匹配
 - ⌨️ **完整键盘支持** - 方向键、Tab 切换分组、Home/End 跳转
 - 🎨 **多种布局** - list、grid、icon-grid
 - 🌐 **国际化** - 内置中英文，支持自定义
@@ -336,6 +336,7 @@ const registry = ctx.get(menuRegistryCtx.key);
 registry.registerGroup({
   id: "custom",
   label: "自定义",
+  keywords: ["custom", "自定义", "zidingyi", "zdy"],  // 分组关键词，搜索时匹配
   layout: "list",      // "list" | "grid" | "icon-grid"
   columns: 2,          // 最大列数（仅 grid/icon-grid 布局有效），空间不足时自动换行
   showDescription: true, // 是否显示描述（仅 list 布局有效），默认 false
@@ -592,6 +593,63 @@ configureSlashMenu(ctx, {
 | `Home` | 跳转到第一项 |
 | `End` | 跳转到最后一项 |
 
+## 搜索逻辑
+
+斜杠菜单支持智能搜索，输入关键词可快速过滤菜单项。
+
+### 匹配范围
+
+搜索会匹配以下四个维度（按优先级排序）：
+
+1. **菜单项标签** (`item.label`) - 最高优先级
+2. **菜单项关键词** (`item.keywords`) - 次高优先级
+3. **分组标签** (`group.label`) - 较低优先级
+4. **分组关键词** (`group.keywords`) - 最低优先级
+
+### 匹配规则
+
+- 不区分大小写
+- 支持部分匹配（包含即可）
+- 匹配任意一个维度即显示该菜单项
+
+### 排序规则
+
+匹配结果按相关性评分排序：
+
+| 匹配类型 | 完全匹配 | 前缀匹配 | 包含匹配 |
+|----------|----------|----------|----------|
+| 菜单项标签 | 100 | 80 | 60 |
+| 菜单项关键词 | 90 | 70 | 50 |
+| 分组标签 | 40 | 30 | 20 |
+| 分组关键词 | 35 | 25 | 15 |
+
+### 使用示例
+
+```
+输入 "/基础" → 匹配基础分组下的所有菜单项（通过分组标签）
+输入 "/jc"   → 匹配基础分组下的所有菜单项（通过分组关键词 "jc"）
+输入 "/h1"   → 匹配一级标题（通过菜单项关键词）
+输入 "/标题" → 匹配所有标题项（通过菜单项关键词）
+```
+
+### 默认分组关键词
+
+| 分组 | 关键词 |
+|------|--------|
+| 基础 | `basic`, `基础`, `jichu`, `jc`, `常用`, `changyong`, `cy` |
+| 高级 | `advanced`, `高级`, `gaoji`, `gj`, `更多`, `gengduo`, `gd` |
+
+### 自定义分组关键词
+
+```typescript
+registry.registerGroup({
+  id: "containers",
+  label: "容器",
+  keywords: ["container", "容器", "rongqi", "rq", "callout"],
+  items: [...],
+});
+```
+
 ## CSS 变量
 
 所有 CSS 变量使用 `--milkdown-slash-menu-` 前缀：
@@ -788,6 +846,7 @@ interface MenuItemConfig {
 interface MenuGroupConfig {
   id: string;
   label: string;
+  keywords?: string[];        // 分组关键词，搜索时会匹配
   layout?: "list" | "grid" | "icon-grid";
   columns?: number;           // 最大列数，空间不足时自动换行
   showDescription?: boolean;  // 是否显示描述（仅 list 布局有效），默认 false

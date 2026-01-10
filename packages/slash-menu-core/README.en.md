@@ -8,13 +8,14 @@ Feature-rich slash menu plugin for [Milkdown](https://milkdown.dev) editor, supp
 
 - 🎯 **Framework Agnostic** - Core logic separated from rendering
 - 📦 **Registry Pattern** - Flexible menu item extension
-- 🔍 **Smart Search** - Fuzzy matching with Pinyin support
+- 🔍 **Smart Search** - Fuzzy matching with group/item labels, keywords, and Pinyin support
 - ⌨️ **Full Keyboard Support** - Arrow keys, Tab for group switching, Home/End navigation
 - 🎨 **Multiple Layouts** - list, grid, icon-grid
 - 🌐 **i18n** - Built-in Chinese and English, customizable
 - 🎛️ **Three-level Customization** - Item, group, and menu rendering
 - ♿ **Accessibility** - Full ARIA attributes support
 - 🔌 **Event Hooks** - onOpen, onClose, onSelect, onFilter
+- 📐 **Smart Positioning** - Adaptive height, direction locking, fixed anchor point
 
 ## Installation
 
@@ -242,6 +243,7 @@ const registry = ctx.get(menuRegistryCtx.key);
 registry.registerGroup({
   id: "custom",
   label: "Custom",
+  keywords: ["custom", "my"],  // Group keywords for search matching
   layout: "list",      // "list" | "grid" | "icon-grid"
   columns: 2,          // Max columns (grid/icon-grid only), auto-wraps when space is insufficient
   showDescription: true, // Show description (list layout only), default false
@@ -466,6 +468,62 @@ configureSlashMenu(ctx, {
 | `Home` | Jump to first item |
 | `End` | Jump to last item |
 
+## Search Logic
+
+The slash menu supports smart search, allowing quick filtering of menu items by keywords.
+
+### Match Scope
+
+Search matches across four dimensions (by priority):
+
+1. **Item label** (`item.label`) - Highest priority
+2. **Item keywords** (`item.keywords`) - High priority
+3. **Group label** (`group.label`) - Lower priority
+4. **Group keywords** (`group.keywords`) - Lowest priority
+
+### Match Rules
+
+- Case insensitive
+- Partial matching (contains)
+- Matching any dimension shows the menu item
+
+### Sorting Rules
+
+Results are sorted by relevance score:
+
+| Match Type | Exact Match | Prefix Match | Contains Match |
+|------------|-------------|--------------|----------------|
+| Item label | 100 | 80 | 60 |
+| Item keywords | 90 | 70 | 50 |
+| Group label | 40 | 30 | 20 |
+| Group keywords | 35 | 25 | 15 |
+
+### Usage Examples
+
+```
+Type "/basic"   → Matches all items in Basic group (via group label)
+Type "/h1"      → Matches Heading 1 (via item keywords)
+Type "/heading" → Matches all heading items (via item keywords)
+```
+
+### Default Group Keywords
+
+| Group | Keywords |
+|-------|----------|
+| Basic | `basic`, `基础`, `jichu`, `jc`, `常用`, `changyong`, `cy` |
+| Advanced | `advanced`, `高级`, `gaoji`, `gj`, `更多`, `gengduo`, `gd` |
+
+### Custom Group Keywords
+
+```typescript
+registry.registerGroup({
+  id: "containers",
+  label: "Containers",
+  keywords: ["container", "callout", "box"],
+  items: [...],
+});
+```
+
 ## CSS Variables
 
 All CSS variables use `--milkdown-slash-menu-` prefix:
@@ -546,6 +604,7 @@ interface MenuItemConfig {
 interface MenuGroupConfig {
   id: string;
   label: string;
+  keywords?: string[];        // Group keywords for search matching
   layout?: "list" | "grid" | "icon-grid";
   columns?: number;           // Max columns, auto-wraps when space is insufficient
   showDescription?: boolean;  // Show description (list layout only), default false

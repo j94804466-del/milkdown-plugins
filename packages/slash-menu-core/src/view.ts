@@ -231,15 +231,20 @@ export class SlashMenuView {
     const registry = this.ctx.get(menuRegistryCtx.key);
     const allGroups = registry.getGroups();
     const customFilter = this.options.filter ?? filterAndSort;
-    const filterLower = this.filter.toLowerCase();
 
     let globalIndex = 0;
     const runtimeGroups: RuntimeMenuGroup[] = [];
 
     for (const group of allGroups) {
       const groupItems = registry.getItems(group.id);
-      const groupMatches = this.filter && group.label.toLowerCase().includes(filterLower);
-      const filteredItems = groupMatches ? groupItems : customFilter(groupItems, this.filter);
+      
+      // 为每个菜单项附加分组信息，用于搜索
+      const itemsWithGroup = groupItems.map((item) => ({
+        ...item,
+        _group: group,
+      }));
+      
+      const filteredItems = customFilter(itemsWithGroup, this.filter);
 
       if (filteredItems.length === 0) continue;
 

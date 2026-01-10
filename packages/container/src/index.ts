@@ -1074,6 +1074,94 @@ const containerInitPlugin: MilkdownPlugin = (ctx) => async () => {
   initConfig(config.types);
 };
 
+// ============ 斜杠菜单配置 ============
+
+import { callCommand } from "@milkdown/kit/utils";
+
+/**
+ * 容器斜杠菜单项配置
+ * 可直接用于 registry.registerItem()
+ */
+export const containerSlashMenuItems = {
+  info: {
+    id: "container-info",
+    label: "信息",
+    icon: infoIcon,
+    keywords: ["info", "container", "信息", "xx"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["info"])(ctx),
+  },
+  tip: {
+    id: "container-tip",
+    label: "提示",
+    icon: tipIcon,
+    keywords: ["tip", "container", "提示", "ts"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["tip"])(ctx),
+  },
+  warning: {
+    id: "container-warning",
+    label: "警告",
+    icon: warningIcon,
+    keywords: ["warning", "container", "警告", "jg"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["warning"])(ctx),
+  },
+  caution: {
+    id: "container-caution",
+    label: "危险",
+    icon: cautionIcon,
+    keywords: ["caution", "danger", "container", "危险", "wx"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["caution"])(ctx),
+  },
+  note: {
+    id: "container-note",
+    label: "注意",
+    icon: noteIcon,
+    keywords: ["note", "container", "注意", "zy"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["note"])(ctx),
+  },
+  important: {
+    id: "container-important",
+    label: "重要",
+    icon: importantIcon,
+    keywords: ["important", "container", "重要", "zy"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["important"])(ctx),
+  },
+  details: {
+    id: "container-details",
+    label: "详情",
+    icon: detailsIcon,
+    keywords: ["details", "collapse", "container", "详情", "折叠", "xq", "zd"],
+    action: (ctx: any) => callCommand(createContainerCommand.key, ["details"])(ctx),
+  },
+};
+
+/**
+ * 容器斜杠菜单分组配置
+ * 可直接用于 registry.registerGroup()
+ * 
+ * @example
+ * ```ts
+ * import { containerSlashMenuGroup } from '@xz-summer/milkdown-container'
+ * 
+ * registry.registerGroup(containerSlashMenuGroup)
+ * ```
+ */
+export const containerSlashMenuGroup = {
+  id: "containers",
+  label: "容器",
+  keywords: ["container", "容器", "rongqi", "rq"],
+  layout: "icon-grid" as const,
+  columns: 7,
+  items: [
+    containerSlashMenuItems.info,
+    containerSlashMenuItems.tip,
+    containerSlashMenuItems.warning,
+    containerSlashMenuItems.caution,
+    containerSlashMenuItems.note,
+    containerSlashMenuItems.important,
+    containerSlashMenuItems.details,
+  ],
+};
+
 // ============ 导出 ============
 
 /**

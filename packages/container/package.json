@@ -1,6 +1,6 @@
 {
   "name": "@xz-summer/milkdown-container",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Container directive plugin for Milkdown - supports info, tip, warning, danger, and details containers | Milkdown 容器指令插件 - 支持信息、提示、警告、危险和详情容器",
   "keywords": [
     "milkdown",

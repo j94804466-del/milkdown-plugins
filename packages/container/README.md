@@ -270,6 +270,52 @@ Details 结构：
 </details>
 ```
 
+## 斜杠菜单集成
+
+插件导出了预配置的斜杠菜单项，可直接用于斜杠菜单插件：
+
+### 注册整个分组
+
+```typescript
+import { containerSlashMenuGroup } from '@xz-summer/milkdown-container'
+import { menuRegistryCtx } from '@xz-summer/milkdown-slash-menu-vue'
+
+editor.config((ctx) => {
+  const registry = ctx.get(menuRegistryCtx.key)
+  registry.registerGroup(containerSlashMenuGroup)
+})
+```
+
+### 注册单个菜单项
+
+```typescript
+import { containerSlashMenuItems } from '@xz-summer/milkdown-container'
+import { menuRegistryCtx, DEFAULT_GROUP_IDS } from '@xz-summer/milkdown-slash-menu-vue'
+
+editor.config((ctx) => {
+  const registry = ctx.get(menuRegistryCtx.key)
+  // 只注册部分容器类型
+  registry.registerItem(DEFAULT_GROUP_IDS.ADVANCED, containerSlashMenuItems.info)
+  registry.registerItem(DEFAULT_GROUP_IDS.ADVANCED, containerSlashMenuItems.tip)
+})
+```
+
+### 自定义分组配置
+
+```typescript
+import { containerSlashMenuItems } from '@xz-summer/milkdown-container'
+
+registry.registerGroup({
+  id: 'my-containers',
+  label: '我的容器',
+  layout: 'list',
+  items: [
+    { ...containerSlashMenuItems.info, label: '信息提示' },
+    { ...containerSlashMenuItems.warning, label: '警告信息' },
+  ],
+})
+```
+
 ## API 参考
 
 ### 导出内容
@@ -319,6 +365,10 @@ export {
   cautionIcon,
   detailsIcon,
 };
+
+// 斜杠菜单配置
+export { containerSlashMenuItems };   // 单个菜单项配置
+export { containerSlashMenuGroup };   // 完整分组配置
 
 // 类型
 export type { ContainerTypeConfig };

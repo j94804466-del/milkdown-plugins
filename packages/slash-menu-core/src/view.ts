@@ -5,9 +5,10 @@ import { SlashProvider } from "@milkdown/kit/plugin/slash";
 import { TextSelection, type Selection } from "@milkdown/kit/prose/state";
 import { size, offset, type Placement, type Middleware } from "@floating-ui/dom";
 
-import type { SlashMenuOptions, RuntimeMenuGroup, RuntimeMenuItem, SlashMenuRenderer, MenuState, MenuCallbacks } from "./types";
+import type { SlashMenuOptions, RuntimeMenuGroup, RuntimeMenuItem, SlashMenuRenderer, MenuState, MenuCallbacks, MenuItem, MenuGroup, SlashMenuI18n } from "./types";
 
 import { CLASS_NAMES } from "./constants";
+import { BUILTIN_LOCALES } from "./defaults";
 import { filterAndSort } from "./filter";
 import { menuRegistryCtx } from "./registry";
 
@@ -233,6 +234,8 @@ export class SlashMenuView {
     const registry = this.ctx.get(menuRegistryCtx.key);
     const allGroups = registry.getGroups();
     const customFilter = this.options.filter ?? filterAndSort;
+    const locale = this.options._locale ?? "zh-CN";
+    const userI18n = this.options._userI18n;
 
     let globalIndex = 0;
     const runtimeGroups: RuntimeMenuGroup[] = [];
@@ -253,17 +256,61 @@ export class SlashMenuView {
       const startIndex = globalIndex;
       const runtimeItems: RuntimeMenuItem[] = filteredItems.map((item) => ({
         ...item,
+        // 应用 i18n 翻译：用户 i18n > 注册时指定值 > 内置语言包
+        label: this.getItemLabel(item, locale, userI18n),
+        description: this.getItemDescription(item, locale, userI18n),
         index: globalIndex++,
       }));
 
       runtimeGroups.push({
         ...group,
+        // 应用 i18n 翻译：用户 i18n > 注册时指定值 > 内置语言包
+        label: this.getGroupLabel(group, locale, userI18n),
         items: runtimeItems,
         range: [startIndex, globalIndex],
       });
     }
 
     return { groups: runtimeGroups, totalCount: globalIndex };
+  }
+
+  /** 获取菜单项标签：用户 i18n > 注册时指定值 > 内置语言包 */
+  private getItemLabel(item: MenuItem, locale: string, userI18n?: SlashMenuI18n): string {
+    // 优先级 1：用户 i18n
+    const userLabel = userI18n?.[locale]?.items?.[item.id]?.label;
+    if (userLabel) return userLabel;
+    
+    // 优先级 2：注册时指定值
+    if (item.label) return item.label;
+    
+    // 优先级 3：内置语言包
+    return BUILTIN_LOCALES[locale]?.items?.[item.id]?.label ?? item.id;
+  }
+
+  /** 获取菜单项描述：用户 i18n > 注册时指定值 > 内置语言包 */
+  private getItemDescription(item: MenuItem, locale: string, userI18n?: SlashMenuI18n): string | undefined {
+    // 优先级 1：用户 i18n
+    const userDesc = userI18n?.[locale]?.items?.[item.id]?.desc;
+    if (userDesc) return userDesc;
+    
+    // 优先级 2：注册时指定值
+    if (item.description) return item.description;
+    
+    // 优先级 3：内置语言包
+    return BUILTIN_LOCALES[locale]?.items?.[item.id]?.desc;
+  }
+
+  /** 获取分组标签：用户 i18n > 注册时指定值 > 内置语言包 */
+  private getGroupLabel(group: MenuGroup, locale: string, userI18n?: SlashMenuI18n): string {
+    // 优先级 1：用户 i18n
+    const userLabel = userI18n?.[locale]?.groups?.[group.id];
+    if (userLabel) return userLabel;
+    
+    // 优先级 2：注册时指定值
+    if (group.label) return group.label;
+    
+    // 优先级 3：内置语言包
+    return BUILTIN_LOCALES[locale]?.groups?.[group.id] ?? group.id;
   }
 
   private render() {

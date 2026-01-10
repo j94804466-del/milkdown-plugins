@@ -98,15 +98,9 @@ export function configureSlashMenu(ctx: Ctx, options: ConfigureSlashMenuOptions 
   const registry = ctx.get(menuRegistryCtx.key);
   registry.clear();
 
-  // 获取合并后的语言配置
-  const localeConfig = getLocaleConfig(locale, i18n);
-
-  // 注册默认菜单项
+  // 注册默认菜单项（不带 label，由 i18n 系统处理）
   if (registerDefaults) {
-    const defaultGroups = getDefaultMenuGroups({
-      ...defaultMenuOptions,
-      localeConfig,
-    });
+    const defaultGroups = getDefaultMenuGroups(defaultMenuOptions);
     defaultGroups.forEach((group) => registry.registerGroup(group));
   }
 
@@ -117,8 +111,10 @@ export function configureSlashMenu(ctx: Ctx, options: ConfigureSlashMenuOptions 
     view: (view) => {
       const slashView = new SlashMenuView(ctx, view, {
         ...slashOptions,
-        // 内部传递 UI 标签
+        // 内部传递 UI 标签、locale 和用户 i18n
         _uiLabels: uiLabels,
+        _locale: locale,
+        _userI18n: i18n,
       } as SlashMenuOptions);
 
       ctx.set(slashMenuAPI.key, {

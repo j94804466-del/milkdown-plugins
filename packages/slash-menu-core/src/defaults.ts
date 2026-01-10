@@ -238,34 +238,26 @@ import {
 } from "./icons";
 
 export interface DefaultMenuOptions {
-  /** 语言配置（由 configureSlashMenu 传入） */
-  localeConfig?: LocaleConfig;
   enableImage?: boolean;
   enableTable?: boolean;
   enableMath?: boolean;
 }
 
 export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGroupConfig[] {
-  // 使用传入的 localeConfig，默认使用中文
-  const config: LocaleConfig = options.localeConfig ?? BUILTIN_LOCALES["zh-CN"];
-  const groups = config.groups || {};
-  const items = config.items || {};
-
   const enableImage = options.enableImage ?? true;
   const enableTable = options.enableTable ?? true;
   const enableMath = options.enableMath ?? true;
 
   const basicGroup: MenuGroupConfig = {
     id: DEFAULT_GROUP_IDS.BASIC,
-    label: groups[DEFAULT_GROUP_IDS.BASIC] || "基础",
+    // label 不指定，由 i18n 系统处理
     keywords: ["basic", "基础", "jichu", "jc", "常用", "changyong", "cy"],
     layout: "icon-grid",
     priority: 100,
     items: [
       {
         id: DEFAULT_ITEM_IDS.TEXT,
-        label: items[DEFAULT_ITEM_IDS.TEXT]?.label || "正文",
-        description: items[DEFAULT_ITEM_IDS.TEXT]?.desc,
+        // label 不指定，由 i18n 系统处理
         keywords: ["text", "paragraph", "正文", "文本", "zhengwen", "zw", "wenben", "wb"],
         icon: textIcon,
         action: (ctx: Ctx) => {
@@ -277,8 +269,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H1,
-        label: items[DEFAULT_ITEM_IDS.H1]?.label || "一级标题",
-        description: items[DEFAULT_ITEM_IDS.H1]?.desc,
         keywords: ["heading", "h1", "标题", "一级标题", "biaoti", "bt", "yijibiaoti", "yjbt"],
         icon: h1Icon,
         action: (ctx: Ctx) => {
@@ -290,8 +280,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H2,
-        label: items[DEFAULT_ITEM_IDS.H2]?.label || "二级标题",
-        description: items[DEFAULT_ITEM_IDS.H2]?.desc,
         keywords: ["heading", "h2", "标题", "二级标题", "biaoti", "bt", "erjibiaoti", "ejbt"],
         icon: h2Icon,
         action: (ctx: Ctx) => {
@@ -303,8 +291,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H3,
-        label: items[DEFAULT_ITEM_IDS.H3]?.label || "三级标题",
-        description: items[DEFAULT_ITEM_IDS.H3]?.desc,
         keywords: ["heading", "h3", "标题", "三级标题", "biaoti", "bt", "sanjibiaoti", "sjbt"],
         icon: h3Icon,
         action: (ctx: Ctx) => {
@@ -316,8 +302,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H4,
-        label: items[DEFAULT_ITEM_IDS.H4]?.label || "四级标题",
-        description: items[DEFAULT_ITEM_IDS.H4]?.desc,
         keywords: ["heading", "h4", "标题", "四级标题", "biaoti", "bt", "sijibiaoti", "sjbt4"],
         icon: h4Icon,
         action: (ctx: Ctx) => {
@@ -329,8 +313,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H5,
-        label: items[DEFAULT_ITEM_IDS.H5]?.label || "五级标题",
-        description: items[DEFAULT_ITEM_IDS.H5]?.desc,
         keywords: ["heading", "h5", "标题", "五级标题", "biaoti", "bt", "wujibiaoti", "wjbt"],
         icon: h5Icon,
         action: (ctx: Ctx) => {
@@ -342,8 +324,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.H6,
-        label: items[DEFAULT_ITEM_IDS.H6]?.label || "六级标题",
-        description: items[DEFAULT_ITEM_IDS.H6]?.desc,
         keywords: ["heading", "h6", "标题", "六级标题", "biaoti", "bt", "liujibiaoti", "ljbt"],
         icon: h6Icon,
         action: (ctx: Ctx) => {
@@ -355,8 +335,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.QUOTE,
-        label: items[DEFAULT_ITEM_IDS.QUOTE]?.label || "引用",
-        description: items[DEFAULT_ITEM_IDS.QUOTE]?.desc,
         keywords: ["quote", "blockquote", "引用", "yinyong", "yy"],
         icon: quoteIcon,
         action: (ctx: Ctx) => {
@@ -368,8 +346,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.DIVIDER,
-        label: items[DEFAULT_ITEM_IDS.DIVIDER]?.label || "分割线",
-        description: items[DEFAULT_ITEM_IDS.DIVIDER]?.desc,
         keywords: ["divider", "hr", "分割线", "fengexian", "fgx"],
         icon: dividerIcon,
         action: (ctx: Ctx) => {
@@ -381,8 +357,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.BULLET_LIST,
-        label: items[DEFAULT_ITEM_IDS.BULLET_LIST]?.label || "无序列表",
-        description: items[DEFAULT_ITEM_IDS.BULLET_LIST]?.desc,
         keywords: ["bullet", "list", "unordered", "无序列表", "wuxuliebiao", "wxlb"],
         icon: bulletListIcon,
         action: (ctx: Ctx) => {
@@ -394,8 +368,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.ORDERED_LIST,
-        label: items[DEFAULT_ITEM_IDS.ORDERED_LIST]?.label || "有序列表",
-        description: items[DEFAULT_ITEM_IDS.ORDERED_LIST]?.desc,
         keywords: ["ordered", "list", "numbered", "有序列表", "youxuliebiao", "yxlb"],
         icon: orderedListIcon,
         action: (ctx: Ctx) => {
@@ -407,8 +379,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
       },
       {
         id: DEFAULT_ITEM_IDS.TASK_LIST,
-        label: items[DEFAULT_ITEM_IDS.TASK_LIST]?.label || "任务列表",
-        description: items[DEFAULT_ITEM_IDS.TASK_LIST]?.desc,
         keywords: ["task", "todo", "checkbox", "任务列表", "待办", "renwuliebiao", "rwlb", "daiban", "db"],
         icon: todoListIcon,
         action: (ctx: Ctx) => {
@@ -426,8 +396,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   if (enableImage) {
     advancedItems.push({
       id: DEFAULT_ITEM_IDS.IMAGE,
-      label: items[DEFAULT_ITEM_IDS.IMAGE]?.label || "图片",
-      description: items[DEFAULT_ITEM_IDS.IMAGE]?.desc,
       keywords: ["image", "picture", "photo", "图片", "tupian", "tp"],
       icon: imageIcon,
       action: (ctx: Ctx) => {
@@ -445,8 +413,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
 
   advancedItems.push({
     id: DEFAULT_ITEM_IDS.CODE,
-    label: items[DEFAULT_ITEM_IDS.CODE]?.label || "代码块",
-    description: items[DEFAULT_ITEM_IDS.CODE]?.desc,
     keywords: ["code", "codeblock", "代码块", "代码", "daimakuai", "dmk", "daima", "dm"],
     icon: codeIcon,
     action: (ctx: Ctx) => {
@@ -460,8 +426,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   if (enableTable) {
     advancedItems.push({
       id: DEFAULT_ITEM_IDS.TABLE,
-      label: items[DEFAULT_ITEM_IDS.TABLE]?.label || "表格",
-      description: items[DEFAULT_ITEM_IDS.TABLE]?.desc,
       keywords: ["table", "表格", "biaoge", "bg"],
       icon: tableIcon,
       action: (ctx: Ctx) => {
@@ -482,8 +446,6 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
   if (enableMath) {
     advancedItems.push({
       id: DEFAULT_ITEM_IDS.MATH,
-      label: items[DEFAULT_ITEM_IDS.MATH]?.label || "数学公式",
-      description: items[DEFAULT_ITEM_IDS.MATH]?.desc,
       keywords: ["math", "latex", "formula", "数学公式", "公式", "shuxuegongshi", "sxgs", "gongshi", "gs"],
       icon: functionsIcon,
       action: (ctx: Ctx) => {
@@ -497,7 +459,7 @@ export function getDefaultMenuGroups(options: DefaultMenuOptions = {}): MenuGrou
 
   const advancedGroup: MenuGroupConfig = {
     id: DEFAULT_GROUP_IDS.ADVANCED,
-    label: groups[DEFAULT_GROUP_IDS.ADVANCED] || "高级",
+    // label 不指定，由 i18n 系统处理
     keywords: ["advanced", "高级", "gaoji", "gj", "更多", "gengduo", "gd"],
     layout: "grid",
     columns: 2,

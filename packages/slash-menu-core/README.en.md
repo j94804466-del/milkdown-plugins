@@ -188,6 +188,45 @@ interface LocaleConfig {
 }
 ```
 
+### i18n Translation Priority
+
+Labels and descriptions follow this priority order (highest to lowest):
+
+1. **User i18n config** - The `i18n` option passed to `configureSlashMenu`
+2. **Registered value** - The `label` / `description` specified in `registerGroup` / `registerItem`
+3. **Built-in locale** - The plugin's built-in Chinese and English translations
+
+```typescript
+// Example: Priority demonstration
+configureSlashMenu(ctx, {
+  locale: "en",
+  i18n: {
+    "en": {
+      items: {
+        h1: { label: "Main Title" },  // Priority 1: User i18n
+      },
+    },
+  },
+});
+
+// Register custom menu item
+registry.registerItem("basic", {
+  id: "my-item",
+  label: "My Item",  // Priority 2: Registered value
+  action: (ctx) => {},
+});
+
+// Default items (like h2) use built-in locale  // Priority 3: Built-in locale
+```
+
+**Use Cases:**
+
+| Scenario | Recommended Approach |
+|----------|---------------------|
+| Override default item translations | Use `i18n` config |
+| Custom item (single language) | Specify `label` when registering |
+| Custom item (multi-language) | Don't specify `label`, use `i18n` config for each language |
+
 ### i18n Usage Example
 
 ```typescript

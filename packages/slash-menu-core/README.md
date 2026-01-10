@@ -281,6 +281,45 @@ interface LocaleConfig {
 }
 ```
 
+### i18n 翻译优先级
+
+标签和描述的翻译遵循以下优先级（从高到低）：
+
+1. **用户 i18n 配置** - `configureSlashMenu` 中传入的 `i18n` 配置
+2. **注册时指定值** - `registerGroup` / `registerItem` 时指定的 `label` / `description`
+3. **内置语言包** - 插件内置的中英文翻译
+
+```typescript
+// 示例：优先级演示
+configureSlashMenu(ctx, {
+  locale: "zh-CN",
+  i18n: {
+    "zh-CN": {
+      items: {
+        h1: { label: "主标题" },  // 优先级 1：用户 i18n
+      },
+    },
+  },
+});
+
+// 注册自定义菜单项
+registry.registerItem("basic", {
+  id: "my-item",
+  label: "我的菜单项",  // 优先级 2：注册时指定
+  action: (ctx) => {},
+});
+
+// 默认菜单项（如 h2）使用内置语言包  // 优先级 3：内置语言包
+```
+
+**适用场景：**
+
+| 场景 | 推荐方式 |
+|------|----------|
+| 覆盖默认菜单项的翻译 | 使用 `i18n` 配置 |
+| 自定义菜单项（单语言） | 注册时直接指定 `label` |
+| 自定义菜单项（多语言） | 注册时不指定 `label`，通过 `i18n` 配置各语言翻译 |
+
 ### i18n 使用示例
 
 ```typescript

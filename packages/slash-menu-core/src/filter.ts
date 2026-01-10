@@ -12,11 +12,11 @@ export function defaultFilter(items: MenuItemWithGroup[], query: string): MenuIt
 
   return items.filter((item) => {
     // 菜单项 label
-    if (item.label.toLowerCase().includes(q)) return true;
+    if (item.label?.toLowerCase().includes(q)) return true;
     // 菜单项 keywords
     if ((item.keywords ?? []).some((kw) => kw.toLowerCase().includes(q))) return true;
     // 分组 label
-    if (item._group?.label.toLowerCase().includes(q)) return true;
+    if (item._group?.label?.toLowerCase().includes(q)) return true;
     // 分组 keywords
     if ((item._group?.keywords ?? []).some((kw) => kw.toLowerCase().includes(q))) return true;
     return false;
@@ -30,7 +30,7 @@ export function getMatchScore(item: MenuItemWithGroup, query: string): number {
   let score = 0;
 
   // 菜单项 label 匹配
-  const label = item.label.toLowerCase();
+  const label = (item.label ?? "").toLowerCase();
   if (label === q) score += 100;
   else if (label.startsWith(q)) score += 80;
   else if (label.includes(q)) score += 60;
@@ -45,7 +45,7 @@ export function getMatchScore(item: MenuItemWithGroup, query: string): number {
 
   // 分组 label 匹配（权重稍低）
   if (item._group) {
-    const groupLabel = item._group.label.toLowerCase();
+    const groupLabel = (item._group.label ?? "").toLowerCase();
     if (groupLabel === q) score += 40;
     else if (groupLabel.startsWith(q)) score += 30;
     else if (groupLabel.includes(q)) score += 20;

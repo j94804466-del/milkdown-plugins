@@ -7,7 +7,8 @@ import type { LayoutType } from "./constants";
 /** 菜单项配置（注册时使用） */
 export interface MenuItemConfig {
   id: string;
-  label: string;
+  /** 标签，可选。如果不指定，由 i18n 系统根据 id 获取 */
+  label?: string;
   keywords?: string[];
   icon?: string;
   description?: string;
@@ -27,7 +28,8 @@ export interface MenuItem extends MenuItemConfig {
 /** 菜单分组配置 */
 export interface MenuGroupConfig {
   id: string;
-  label: string;
+  /** 标签，可选。如果不指定，由 i18n 系统根据 id 获取 */
+  label?: string;
   /** 分组关键词，会合并到所有子项的搜索词中 */
   keywords?: string[];
   layout?: LayoutType;
@@ -207,6 +209,10 @@ export interface SlashMenuOptions {
     select: string;
     close: string;
   };
+  /** 内部使用：当前语言 */
+  _locale?: string;
+  /** 内部使用：用户 i18n 配置 */
+  _userI18n?: SlashMenuI18n;
   /** 事件钩子 */
   onOpen?: () => void;
   onClose?: () => void;

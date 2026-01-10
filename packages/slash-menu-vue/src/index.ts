@@ -1,25 +1,21 @@
-import type { Ctx, MilkdownPlugin } from "@milkdown/kit/ctx";
+import type { MilkdownPlugin } from "@milkdown/kit/ctx";
 import type { VNode } from "vue";
 
 import {
-  slashMenuPlugin as coreSlashMenuPlugin,
-  configureSlashMenu as coreConfigureSlashMenu,
+  slashMenuPluginWithAutoInit,
+  slashMenuConfig,
   getUILabels,
-  slashMenu,
-  type ConfigureSlashMenuOptions,
   type MenuRenderProps,
   type MenuSlots,
-  type SlashMenuI18n,
 } from "@xz-summer/milkdown-slash-menu-core";
 
 import { createVueRenderer, type VueRendererOptions } from "./renderer";
 
-// Re-export everything from core (except slashMenuPlugin which we override)
+// Re-export everything from core
 export {
   slashMenu,
   slashMenuAPI,
   menuRegistryCtx,
-  configureSlashMenu as coreConfigureSlashMenu,
   getUILabels,
   getLocaleConfig,
   getDefaultMenuGroups,
@@ -33,6 +29,9 @@ export {
   BUILTIN_LOCALES,
   getLayoutClassName,
   isIconOnlyLayout,
+  // 配置 API
+  slashMenuConfig,
+  mergeSlashMenuConfig,
 } from "@xz-summer/milkdown-slash-menu-core";
 
 export type {
@@ -58,8 +57,9 @@ export type {
   ItemI18n,
   SlashMenuI18n,
   UILabels,
-  ConfigureSlashMenuOptions,
   LayoutType,
+  SlashMenuConfig,
+  Position,
 } from "@xz-summer/milkdown-slash-menu-core";
 
 // Export Vue-specific
@@ -73,7 +73,7 @@ export {
 
 // ============ Vue 配置选项 ============
 
-export interface VueSlashMenuOptions extends Omit<ConfigureSlashMenuOptions, "renderer" | "renderMenu" | "slots"> {
+export interface VueSlashMenuOptions {
   /** 自定义整体菜单渲染 */
   renderMenu?: (props: MenuRenderProps) => VNode;
   /** 菜单插槽（Vue 版本） */
@@ -86,72 +86,50 @@ export interface VueSlashMenuOptions extends Omit<ConfigureSlashMenuOptions, "re
   };
   /** 是否显示快捷键提示，默认 true */
   showShortcutHints?: boolean;
-  /** i18n 配置 */
-  i18n?: SlashMenuI18n;
 }
 
-// ============ 带默认渲染器的插件 ============
-
-// 标记是否已配置
-let isConfigured = false;
+// ============ 设置 Vue 渲染器的插件 ============
 
 /**
- * 配置斜杠菜单（Vue 版本）
- * 如果不调用此函数，插件会使用默认配置
+ * 设置 Vue 渲染器
+ * 在插件初始化时设置 rendererFactory
  */
-export function configureSlashMenu(
-  ctx: Ctx,
-  options: VueSlashMenuOptions = {}
-) {
-  isConfigured = true;
-  const { renderMenu, slots, showShortcutHints, locale = "zh-CN", i18n, ...coreOptions } = options;
-  
-  // 获取 UI 标签
-  const uiLabels = getUILabels(locale, i18n);
-  
-  coreConfigureSlashMenu(ctx, {
-    ...coreOptions,
-    locale,
-    i18n,
-    renderer: () => createVueRenderer({ 
-      renderMenu, 
-      slots: slots as MenuSlots,
-      showShortcutHints,
-      i18n: uiLabels,
-    }),
-  });
-}
-
-/**
- * 默认配置函数，在插件初始化时自动调用
- */
-function applyDefaultConfig(ctx: Ctx) {
-  if (isConfigured) return;
-  
-  const uiLabels = getUILabels("zh-CN");
-  
-  coreConfigureSlashMenu(ctx, {
-    locale: "zh-CN",
-    renderer: () => createVueRenderer({
-      i18n: uiLabels,
-    }),
-  });
-}
-
-/**
- * 自动配置插件
- */
-const autoConfigPlugin: MilkdownPlugin = (ctx) => () => {
-  applyDefaultConfig(ctx);
+const setVueRendererPlugin: MilkdownPlugin = (ctx) => () => {
+  ctx.update(slashMenuConfig.key, (prev) => ({
+    ...prev,
+    rendererFactory: () => {
+      const uiLabels = getUILabels(prev.locale, prev.i18n);
+      return createVueRenderer({
+        showShortcutHints: prev.pluginOptions.showShortcutHints,
+        i18n: uiLabels,
+      });
+    },
+  }));
 };
 
 /**
  * 斜杠菜单插件（Vue 版本）
- * 开箱即用，无需手动调用 configureSlashMenu
+ * 开箱即用，自动读取 slashMenuConfig 配置
+ * 
+ * @example
+ * ```ts
+ * editor
+ *   .use(slashMenuPlugin)
+ *   .config((ctx) => {
+ *     // 可选：自定义配置
+ *     ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+ *       locale: 'en',
+ *       groups: [
+ *         { id: 'basic', layout: 'list' }
+ *       ]
+ *     }))
+ *   })
+ *   .create()
+ * ```
  */
 export const slashMenuPlugin: MilkdownPlugin[] = [
-  autoConfigPlugin,
-  ...coreSlashMenuPlugin,
+  setVueRendererPlugin,
+  ...slashMenuPluginWithAutoInit,
 ];
 
 // ============ Vue Composable ============
@@ -160,14 +138,23 @@ export function useSlashMenu(
   options: VueSlashMenuOptions = {}
 ): {
   plugins: MilkdownPlugin[];
-  configure: (ctx: Ctx) => void;
 } {
-  const configure = (ctx: Ctx) => {
-    configureSlashMenu(ctx, options);
+  const customSetRendererPlugin: MilkdownPlugin = (ctx) => () => {
+    ctx.update(slashMenuConfig.key, (prev) => ({
+      ...prev,
+      rendererFactory: () => {
+        const uiLabels = getUILabels(prev.locale, prev.i18n);
+        return createVueRenderer({
+          renderMenu: options.renderMenu,
+          slots: options.slots as MenuSlots,
+          showShortcutHints: options.showShortcutHints ?? prev.pluginOptions.showShortcutHints,
+          i18n: uiLabels,
+        });
+      },
+    }));
   };
 
   return {
-    plugins: coreSlashMenuPlugin,
-    configure,
+    plugins: [customSetRendererPlugin, ...slashMenuPluginWithAutoInit],
   };
 }

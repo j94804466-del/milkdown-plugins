@@ -13,11 +13,7 @@
 ## 安装
 
 ```bash
-npm install @xz-summer/milkdown-container
-# 或
 pnpm add @xz-summer/milkdown-container
-# 或
-yarn add @xz-summer/milkdown-container
 ```
 
 ## 基本使用
@@ -92,48 +88,45 @@ const editor = await Editor.make()
 :::
 ```
 
-
 ## 自定义配置
 
-### 配置容器类型
-
-使用 `configureContainer` 函数自定义容器类型。**必须在使用插件之前调用**。
+使用 `ctx.update` 配合 `mergeContainerConfig` 在 `.config()` 中配置：
 
 ```typescript
 import { 
-  configureContainer, 
+  containerPlugin,
+  containerConfig,
+  mergeContainerConfig,
   ContainerTypes,
   infoIcon,
-  tipIcon,
 } from "@xz-summer/milkdown-container";
 
 // 自定义 SVG 图标
 const successIcon = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>`;
 
-// 在使用插件前配置
-configureContainer({
-  types: [
-    // 覆盖现有类型
-    { 
-      type: ContainerTypes.INFO, 
-      title: "Info", 
-      icon: infoIcon, 
-      aliases: ["information", "default"] 
-    },
-    // 添加新类型
-    { 
-      type: "success", 
-      title: "成功", 
-      icon: successIcon, 
-      aliases: ["ok", "done"] 
-    },
-  ]
-});
-
-// 然后使用插件
 const editor = await Editor.make()
   .use(commonmark)
   .use(containerPlugin)
+  .config((ctx) => {
+    ctx.update(containerConfig.key, mergeContainerConfig({
+      types: [
+        // 覆盖现有类型
+        { 
+          type: ContainerTypes.INFO, 
+          title: "Info", 
+          icon: infoIcon, 
+          aliases: ["information", "default"] 
+        },
+        // 添加新类型
+        { 
+          type: "success", 
+          title: "成功", 
+          icon: successIcon, 
+          aliases: ["ok", "done"] 
+        },
+      ]
+    }));
+  })
   .create();
 ```
 
@@ -151,15 +144,13 @@ interface ContainerTypeConfig {
   aliases?: string[];
 }
 
-interface ContainerPluginOptions {
-  /** 自定义容器类型配置（会与默认配置合并，包括 details） */
-  types?: ContainerTypeConfig[];
+interface ContainerConfig {
+  /** 自定义容器类型配置（会与默认配置合并） */
+  types: ContainerTypeConfig[];
 }
 ```
 
 ### 类型常量
-
-插件导出了内置类型常量，方便引用：
 
 ```typescript
 import { ContainerTypes } from "@xz-summer/milkdown-container";
@@ -175,15 +166,16 @@ ContainerTypes.DETAILS    // "details"
 
 ### 配置 Details
 
-Details 和其他容器类型一样通过 `types` 配置：
-
 ```typescript
-import { configureContainer, ContainerTypes, detailsIcon } from "@xz-summer/milkdown-container";
+import { 
+  containerConfig, 
+  mergeContainerConfig, 
+  ContainerTypes 
+} from "@xz-summer/milkdown-container";
 
-// 自定义折叠图标
 const customDetailsIcon = `<svg>...</svg>`;
 
-configureContainer({
+ctx.update(containerConfig.key, mergeContainerConfig({
   types: [
     {
       type: ContainerTypes.DETAILS,
@@ -192,7 +184,7 @@ configureContainer({
       aliases: ["detail", "collapse", "collapsible", "spoiler"],
     }
   ]
-});
+}));
 ```
 
 ### 添加新类型的 CSS 样式
@@ -221,8 +213,6 @@ configureContainer({
 ```
 
 ### CSS 变量
-
-可以通过覆盖 CSS 变量自定义颜色：
 
 ```css
 :root {
@@ -286,37 +276,38 @@ Details 结构：
 
 ```typescript
 // 插件
-export { containerPlugin };           // 插件数组，直接用于 editor.use()
+export { containerPlugin };           // 插件数组
 export { remarkDirective };           // Remark 指令插件
 
-// 普通容器 Schema
-export { containerSchema };           // 容器节点 Schema
-export { containerTitleSchema };      // 容器标题节点 Schema
-export { containerContentSchema };    // 容器内容节点 Schema
-export { containerTitleNodeView };    // 容器标题 NodeView
-
-// Details Schema（独立）
-export { detailsSchema };             // Details 节点 Schema
-export { detailsSummarySchema };      // Details Summary 节点 Schema
-export { detailsContentSchema };      // Details Content 节点 Schema
-export { detailsNodeView };           // Details NodeView
-export { detailsSummaryNodeView };    // Details Summary NodeView
-
-// 通用
-export { containerKeymap };           // 快捷键插件
-export { containerDropPlugin };       // 拖拽过滤插件
-export { createContainerCommand };    // 创建容器命令
-
 // 配置
-export { configureContainer };        // 配置函数
+export { containerConfig };           // 配置 slice
+export { mergeContainerConfig };      // 合并配置工具函数
 export { defaultContainerTypes };     // 默认容器类型配置
 export { ContainerTypes };            // 类型常量
 
+// 普通容器 Schema
+export { containerSchema };
+export { containerTitleSchema };
+export { containerContentSchema };
+export { containerTitleNodeView };
+
+// Details Schema
+export { detailsSchema };
+export { detailsSummarySchema };
+export { detailsContentSchema };
+export { detailsNodeView };
+export { detailsSummaryNodeView };
+
+// 通用
+export { containerKeymap };
+export { containerDropPlugin };
+export { createContainerCommand };
+
 // 工具函数
-export { getContainerConfig };        // 获取容器配置
-export { getContainerIcon };          // 获取容器图标
-export { getDefaultTitle };           // 获取默认标题
-export { getDetailsConfig };          // 获取 details 配置
+export { getContainerConfig };
+export { getContainerIcon };
+export { getDefaultTitle };
+export { getDetailsConfig };
 
 // 图标
 export { 
@@ -327,11 +318,11 @@ export {
   warningIcon,
   cautionIcon,
   detailsIcon,
-} from "./icons";
+};
 
 // 类型
 export type { ContainerTypeConfig };
-export type { ContainerPluginOptions };
+export type { ContainerConfig };
 ```
 
 ### 命令使用
@@ -340,22 +331,10 @@ export type { ContainerPluginOptions };
 import { createContainerCommand } from "@xz-summer/milkdown-container";
 import { commandsCtx } from "@milkdown/kit/core";
 
-// 创建容器
 editor.action((ctx) => {
   ctx.get(commandsCtx).call(createContainerCommand.key, "info", "自定义标题");
 });
 ```
-
-## 输入输出一致性
-
-插件保持输入和输出的一致性。使用别名输入时，输出也会保持原始别名：
-
-| 输入 | 输出 |
-|------|------|
-| `:::ok` | `:::ok` |
-| `:::success` | `:::success` |
-| `:::warn` | `:::warn` |
-| `:::warning` | `:::warning` |
 
 ## 许可证
 

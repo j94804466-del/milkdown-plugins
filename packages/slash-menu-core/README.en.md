@@ -16,6 +16,7 @@ Feature-rich slash menu plugin for [Milkdown](https://milkdown.dev) editor, supp
 - ♿ **Accessibility** - Full ARIA attributes support
 - 🔌 **Event Hooks** - onOpen, onClose, onSelect, onFilter
 - 📐 **Smart Positioning** - Adaptive height, direction locking, fixed anchor point
+- 🔢 **Precise Sorting** - Support priority for coarse sorting and position for precise placement
 
 ## Installation
 
@@ -37,15 +38,19 @@ pnpm add @xz-summer/milkdown-slash-menu-core
 ```tsx
 import { Editor } from "@milkdown/kit/core";
 import { commonmark } from "@milkdown/kit/preset/commonmark";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-react";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-react";
 
 const editor = await Editor.make()
   .use(commonmark)
-  .use(slashMenuPlugins)
+  .use(slashMenuPlugin)
   .config((ctx) => {
-    configureSlashMenu(ctx, {
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
       locale: "en",
-    });
+    }));
   })
   .create();
 ```
@@ -55,14 +60,20 @@ const editor = await Editor.make()
 ```vue
 <script setup lang="ts">
 import { Milkdown, useEditor } from "@milkdown/vue";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-vue";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-vue";
 
 useEditor((root) => {
   return Editor.make()
     .use(commonmark)
-    .use(slashMenuPlugins)
+    .use(slashMenuPlugin)
     .config((ctx) => {
-      configureSlashMenu(ctx, { locale: "en" });
+      ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+        locale: "en",
+      }));
     });
 });
 </script>
@@ -76,237 +87,307 @@ useEditor((root) => {
 
 ```tsx
 import { Crepe } from "@milkdown/crepe";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-react";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-react";
 
 const crepe = new Crepe({
   root,
-  featureConfigs: {
-    [Crepe.Feature.BlockEdit]: {
-      // Disable Crepe's built-in slash menu
-      textGroup: null,
-      listGroup: null,
-      advancedGroup: null,
-    },
+  features: {
+    [Crepe.Feature.BlockEdit]: false,  // Disable Crepe's built-in slash menu
   },
 });
 
 crepe.editor
-  .use(slashMenuPlugins)
+  .use(slashMenuPlugin)
   .config((ctx) => {
-    configureSlashMenu(ctx, { locale: "en" });
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+      locale: "en",
+    }));
   });
 ```
 
-### Important Notes
+## Configuration Methods
 
-> ⚠️ **Important**: `configureSlashMenu` must be called inside `.config()` to ensure it runs before `create()`. Calling it after `create()` will have no effect.
+The slash menu provides two configuration methods:
 
-> 💡 **Tip**: `registry.registerGroup()` and `registry.registerItem()` can also be called inside `.config()`, since `menuRegistryCtx` is injected when `.use(slashMenuPlugin)` is called.
+### Method 1: ctx.update + mergeSlashMenuConfig (Recommended)
 
-## Configuration Options
-
-### configureSlashMenu
+Use `ctx.update` with `mergeSlashMenuConfig` utility for deep merging:
 
 ```typescript
-configureSlashMenu(ctx, {
-  // Trigger character, default "/"
-  trigger: "/",
-  
-  // Language, default "zh-CN"
-  locale: "en",  // "zh-CN" | "en"
-  
-  // i18n configuration (grouped by language)
-  i18n: {
-    "zh-CN": {
-      groups: { basic: "基础块" },
-      items: { 
-        h1: { label: "大标题", desc: "文章主标题" } 
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig,
+  DEFAULT_GROUP_IDS,
+} from "@xz-summer/milkdown-slash-menu-vue";
+
+editor
+  .use(slashMenuPlugin)
+  .config((ctx) => {
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+      locale: 'en',
+      pluginOptions: {
+        trigger: '/',
+        floating: { maxHeight: 400 },
       },
-      ui: { noResults: "没有找到" }
-    },
-    "en": {
-      groups: { basic: "Basic Blocks" },
-      items: { 
-        h1: { label: "Big Heading", desc: "Main title" } 
-      },
-      ui: { noResults: "Nothing found" }
-    }
-  },
-  
-  // Whether to register default menu items, default true
-  registerDefaults: true,
-  
-  // Default menu options
+      // Modify group config (array structure, merged by id)
+      groups: [
+        { 
+          id: DEFAULT_GROUP_IDS.BASIC, 
+          layout: 'list',
+          showDescription: true,
+        },
+        {
+          id: DEFAULT_GROUP_IDS.ADVANCED,
+          items: [
+            {
+              id: 'mermaid',
+              label: 'Diagram',
+              icon: mermaidIcon,
+              keywords: ['mermaid', 'diagram'],
+              position: { after: 'code' },  // Insert after code
+              action: (ctx) => { /* ... */ },
+            },
+          ],
+        },
+      ],
+    }));
+  })
+  .create();
+```
+
+### Method 2: Registry API (Dynamic Registration)
+
+Use `menuRegistryCtx` for dynamic registration:
+
+```typescript
+import { 
+  slashMenuPlugin, 
+  menuRegistryCtx,
+  DEFAULT_GROUP_IDS,
+} from "@xz-summer/milkdown-slash-menu-vue";
+
+editor
+  .use(slashMenuPlugin)
+  .config((ctx) => {
+    const registry = ctx.get(menuRegistryCtx.key);
+    
+    // Register new group
+    registry.registerGroup({
+      id: 'ai',
+      label: 'AI Assistant',
+      position: { index: 0 },  // Insert at the beginning
+      items: [
+        { id: 'ai-write', label: 'AI Write', action: () => {} },
+      ],
+    });
+    
+    // Insert item into existing group
+    registry.insertItemAfter(DEFAULT_GROUP_IDS.ADVANCED, 'code', {
+      id: 'mermaid',
+      label: 'Diagram',
+      action: () => {},
+    });
+  })
+  .create();
+```
+
+## Configuration Structure
+
+### SlashMenuConfig
+
+```typescript
+interface SlashMenuConfig {
+  /** Language, default "zh-CN" */
+  locale: LocaleType;
+  /** i18n configuration */
+  i18n: SlashMenuI18n;
+  /** Group configuration (array structure, merged by id) */
+  groups: MenuGroupConfig[];
+  /** Whether to register default menu items, default true */
+  registerDefaults: boolean;
+  /** Default menu options */
   defaultMenuOptions: {
-    enableImage: true,   // Enable image, default true
-    enableTable: true,   // Enable table, default true
-    enableMath: true,    // Enable math formula, default true
-  },
-  
-  // Whether to show shortcut hints, default true
-  showShortcutHints: true,
-  
-  // Position options
-  position: {
-    offset: 10,           // Offset, default 10
-    placement: "bottom",  // Preferred direction, "top" | "bottom"
-  },
-  
-  // Event hooks
-  onOpen: () => console.log("Menu opened"),
-  onClose: () => console.log("Menu closed"),
-  onSelect: (item) => console.log("Selected:", item.label),
-  onFilter: (query, results) => console.log("Search:", query, results.length),
-});
-```
-
-### i18n Configuration Structure
-
-```typescript
-// i18n configuration type
-interface SlashMenuI18n {
-  [locale: string]: LocaleConfig;
-}
-
-interface LocaleConfig {
-  // Group labels
-  groups?: Record<string, string>;
-  // Menu items (label + description)
-  items?: Record<string, { label?: string; desc?: string }>;
-  // UI text
-  ui?: {
-    noResults?: string;
-    navigate?: string;
-    select?: string;
-    close?: string;
-    switchGroup?: string;
-    firstItem?: string;
-    lastItem?: string;
-    expand?: string;
-    collapse?: string;
+    enableImage: boolean;
+    enableTable: boolean;
+    enableMath: boolean;
   };
+  /** Plugin options */
+  pluginOptions: SlashMenuOptions;
+  /** Renderer factory (auto-set by framework packages) */
+  rendererFactory?: RendererFactory;
 }
 ```
 
-### i18n Translation Priority
-
-Labels and descriptions follow this priority order (highest to lowest):
-
-1. **User i18n config** - The `i18n` option passed to `configureSlashMenu`
-2. **Registered value** - The `label` / `description` specified in `registerGroup` / `registerItem`
-3. **Built-in locale** - The plugin's built-in Chinese and English translations
+### MenuGroupConfig
 
 ```typescript
-// Example: Priority demonstration
-configureSlashMenu(ctx, {
-  locale: "en",
-  i18n: {
-    "en": {
-      items: {
-        h1: { label: "Main Title" },  // Priority 1: User i18n
-      },
-    },
-  },
-});
-
-// Register custom menu item
-registry.registerItem("basic", {
-  id: "my-item",
-  label: "My Item",  // Priority 2: Registered value
-  action: (ctx) => {},
-});
-
-// Default items (like h2) use built-in locale  // Priority 3: Built-in locale
+interface MenuGroupConfig {
+  id: string;
+  /** Label, optional. If not specified, obtained from i18n system by id */
+  label?: string;
+  /** Group keywords for search matching */
+  keywords?: string[];
+  /** Layout type */
+  layout?: "list" | "grid" | "icon-grid";
+  /** Max columns (grid/icon-grid only) */
+  columns?: number;
+  /** Show description (list layout only) */
+  showDescription?: boolean;
+  /** Sort priority, higher = first */
+  priority?: number;
+  /** Precise position control */
+  position?: Position;
+  /** Menu items */
+  items?: MenuItemConfig[];
+  /** Custom group rendering */
+  renderGroup?: (props: GroupRenderProps) => unknown;
+}
 ```
 
-**Use Cases:**
-
-| Scenario | Recommended Approach |
-|----------|---------------------|
-| Override default item translations | Use `i18n` config |
-| Custom item (single language) | Specify `label` when registering |
-| Custom item (multi-language) | Don't specify `label`, use `i18n` config for each language |
-
-### i18n Usage Example
+### MenuItemConfig
 
 ```typescript
-configureSlashMenu(ctx, {
-  locale: "en",
-  i18n: {
-    "en": {
-      groups: {
-        basic: "Basic Blocks",
-        containers: "Containers",  // Custom group
-      },
-      items: {
-        text: { label: "Paragraph", desc: "Plain text paragraph" },
-        h1: { label: "Big Heading", desc: "Main article title" },
-        // Override label only
-        h2: { label: "Medium Heading" },
-        // Override description only
-        h3: { desc: "Subsection heading" },
-        // Custom menu item
-        "container-info": { label: "Info Box", desc: "Information callout" },
-      },
-      ui: {
-        noResults: "No matches found",
-      }
-    },
-    "zh-CN": {
-      groups: {
-        basic: "基础块",
-        containers: "容器",
-      },
-      items: {
-        text: { label: "段落", desc: "普通段落文本" },
-        h1: { label: "大标题", desc: "文章主标题" },
-        "container-info": { label: "信息框", desc: "信息提示" },
-      },
-      ui: {
-        noResults: "没有找到匹配项",
-      }
-    }
-  }
+interface MenuItemConfig {
+  id: string;
+  /** Label, optional. If not specified, obtained from i18n system by id */
+  label?: string;
+  /** Search keywords */
+  keywords?: string[];
+  /** Icon (SVG string) */
+  icon?: string;
+  /** Description text */
+  description?: string;
+  /** Whether disabled */
+  disabled?: boolean;
+  /** Action to execute on click */
+  action: (ctx: Ctx) => void;
+  /** Sort priority, higher = first */
+  priority?: number;
+  /** Precise position control */
+  position?: Position;
+  /** Custom item rendering */
+  renderItem?: (props: ItemRenderProps) => unknown;
+}
+```
+
+### Position
+
+```typescript
+interface Position {
+  /** Insert before specified id */
+  before?: string;
+  /** Insert after specified id */
+  after?: string;
+  /** Insert at specified index */
+  index?: number;
+}
+```
+
+## Sorting Logic
+
+Groups and items follow these sorting rules:
+
+### Priority Order
+
+1. **position** - Precise position control, highest priority
+2. **priority** - Coarse sorting weight, higher = first
+
+### Sorting Process
+
+```
+1. Separate items with and without position
+2. Sort items without position by priority (descending)
+3. Process items with position:
+   - index: Insert at specified index
+   - before: Insert before target id
+   - after: Insert after target id
+4. If target doesn't exist, append to end
+```
+
+### Usage Examples
+
+```typescript
+// Use priority for coarse sorting
+registry.registerGroup({
+  id: 'ai',
+  label: 'AI',
+  priority: 200,  // Higher value = first
+  items: [...],
+});
+
+// Use position for precise placement
+registry.registerGroup({
+  id: 'containers',
+  label: 'Containers',
+  position: { after: 'basic' },  // Insert after basic
+  items: [...],
+});
+
+// Use index for specific position
+registry.registerGroup({
+  id: 'quick',
+  label: 'Quick',
+  position: { index: 0 },  // Insert at the beginning
+  items: [...],
+});
+
+// Items also support position
+registry.insertItemAfter('advanced', 'code', {
+  id: 'mermaid',
+  label: 'Diagram',
+  // Internally sets position: { after: 'code' }
+  action: () => {},
 });
 ```
+
+### Default Group Priorities
+
+| Group | priority |
+|-------|----------|
+| basic | 100 |
+| advanced | 80 |
 
 ## Menu Registry API
 
 ### Get Registry
 
 ```typescript
-import { menuRegistryCtx } from "@xz-summer/milkdown-slash-menu-react";
+import { menuRegistryCtx } from "@xz-summer/milkdown-slash-menu-vue";
 
-// After configureSlashMenu
 const registry = ctx.get(menuRegistryCtx.key);
 ```
 
-### Register Groups and Items
+### Register Group
 
 ```typescript
-// Register new group with items
 registry.registerGroup({
   id: "custom",
   label: "Custom",
-  keywords: ["custom", "my"],  // Group keywords for search matching
-  layout: "list",      // "list" | "grid" | "icon-grid"
-  columns: 2,          // Max columns (grid/icon-grid only), auto-wraps when space is insufficient
-  showDescription: true, // Show description (list layout only), default false
-  priority: 50,        // Sort weight, higher = first
+  keywords: ["custom", "my"],
+  layout: "list",
+  showDescription: true,
+  priority: 50,
   items: [
     {
       id: "custom-item",
       label: "Custom Item",
       icon: "<svg>...</svg>",
-      description: "This is description text",
-      keywords: ["custom", "item"],
-      action: (ctx) => {
-        // Execute action
-      },
+      description: "Description text",
+      keywords: ["custom"],
+      action: (ctx) => { /* ... */ },
     },
   ],
 });
+```
 
+### Register Item
+
+```typescript
 // Add item to existing group
 registry.registerItem("basic", {
   id: "my-item",
@@ -315,48 +396,97 @@ registry.registerItem("basic", {
 });
 ```
 
-### Update Items
+### Insert Group (Precise Position)
 
 ```typescript
-import { DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+// Insert before basic
+registry.insertGroupBefore("basic", {
+  id: "quick",
+  label: "Quick",
+  items: [...],
+});
 
-// Update label and keywords
-registry.updateItem(DEFAULT_ITEM_IDS.H1, {
+// Insert after basic
+registry.insertGroupAfter("basic", {
+  id: "containers",
+  label: "Containers",
+  items: [...],
+});
+```
+
+### Insert Item (Precise Position)
+
+```typescript
+// Insert before code
+registry.insertItemBefore("advanced", "code", {
+  id: "diagram",
+  label: "Diagram",
+  action: () => {},
+});
+
+// Insert after code
+registry.insertItemAfter("advanced", "code", {
+  id: "mermaid",
+  label: "Flowchart",
+  action: () => {},
+});
+```
+
+### Update
+
+```typescript
+// Update item
+registry.updateItem("h1", {
   label: "Big Heading",
-  keywords: ["big", "title", "heading"],
+  keywords: ["big", "title"],
 });
 
 // Update group
 registry.updateGroup("basic", {
-  label: "Basic Formatting",
   layout: "grid",
+  columns: 3,
 });
 ```
 
-### Remove Items
+### Remove
 
 ```typescript
-import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+// Remove item
+registry.unregisterItem("math");
 
-// Remove single item
-registry.unregisterItem(DEFAULT_ITEM_IDS.MATH);
+// Remove group
+registry.unregisterGroup("advanced");
 
-// Remove entire group
-registry.unregisterGroup(DEFAULT_GROUP_IDS.ADVANCED);
-
-// Filter items (keep h1-h3)
-registry.filterItems(DEFAULT_GROUP_IDS.BASIC, (item) => {
-  return ![DEFAULT_ITEM_IDS.H4, DEFAULT_ITEM_IDS.H5, DEFAULT_ITEM_IDS.H6].includes(item.id);
-});
+// Filter items
+registry.filterItems("basic", (item) => !["h4", "h5", "h6"].includes(item.id));
 
 // Filter groups
 registry.filterGroups((group) => group.id !== "advanced");
 ```
 
+### Query
+
+```typescript
+// Get all groups (sorted)
+const groups = registry.getGroups();
+
+// Get single group
+const basicGroup = registry.getGroup("basic");
+
+// Get items in group (sorted)
+const items = registry.getItems("basic");
+
+// Get single item
+const h1Item = registry.getItem("h1");
+
+// Get all items
+const allItems = registry.getAllItems();
+```
+
 ## Default ID Constants
 
 ```typescript
-import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-vue";
 
 // Group IDs
 DEFAULT_GROUP_IDS.BASIC     // "basic"
@@ -381,30 +511,106 @@ DEFAULT_ITEM_IDS.TABLE        // "table"
 DEFAULT_ITEM_IDS.MATH         // "math"
 ```
 
+## Plugin Options
+
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  pluginOptions: {
+    // Trigger character, default "/"
+    trigger: "/",
+    
+    // Show shortcut hints, default true
+    showShortcutHints: true,
+    
+    // Floating position config
+    floating: {
+      offset: 10,           // Offset
+      placement: "bottom",  // Preferred direction "top" | "bottom"
+      width: 260,           // Menu width
+      maxHeight: 440,       // Max height
+      minHeight: 100,       // Min height
+      padding: 10,          // Safe distance from viewport edge
+    },
+    
+    // Event hooks
+    onOpen: () => {},
+    onClose: () => {},
+    onSelect: (item) => {},
+    onFilter: (query, results) => {},
+  },
+}));
+```
+
+## i18n Configuration
+
+### Structure
+
+```typescript
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
+}
+
+interface LocaleConfig {
+  groups?: Record<string, string>;
+  items?: Record<string, { label?: string; desc?: string }>;
+  ui?: {
+    noResults?: string;
+    navigate?: string;
+    select?: string;
+    close?: string;
+  };
+}
+```
+
+### Translation Priority
+
+1. **User i18n config** - `i18n` in `mergeSlashMenuConfig`
+2. **Registered value** - `label` in `registerGroup` / `registerItem`
+3. **Built-in locale** - Plugin's built-in translations
+
+### Usage Example
+
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  locale: "en",
+  i18n: {
+    "en": {
+      groups: {
+        basic: "Basic Blocks",
+        containers: "Containers",
+      },
+      items: {
+        h1: { label: "Big Heading", desc: "Main article title" },
+        "container-info": { label: "Info Box", desc: "Information callout" },
+      },
+      ui: {
+        noResults: "No matches found",
+      },
+    },
+  },
+}));
+```
+
 ## Custom Rendering
 
-### Custom Item Rendering
+### Custom Item
 
 ```tsx
 registry.registerGroup({
   id: "ai",
-  label: "AI Assistant",
+  label: "AI",
   items: [
     {
-      id: "ai-generate",
-      label: "AI Generate",
+      id: "ai-write",
+      label: "AI Write",
       icon: aiIcon,
-      action: (ctx) => {},
-      // Custom rendering
+      action: () => {},
       renderItem: (props) => (
         <li
           data-index={props.item.index}
           className={`${CLASS_NAMES.item} ${props.isActive ? CLASS_NAMES.itemActive : ""}`}
           onPointerEnter={props.onHover}
           onPointerUp={props.onSelect}
-          style={{
-            background: props.isActive ? "linear-gradient(135deg, #667eea, #764ba2)" : undefined,
-          }}
         >
           <span dangerouslySetInnerHTML={{ __html: props.item.icon }} />
           <span>{props.item.label}</span>
@@ -416,27 +622,20 @@ registry.registerGroup({
 });
 ```
 
-### Custom Group Rendering
+### Custom Group
 
 ```tsx
 registry.registerGroup({
   id: "ai",
   label: "AI Assistant",
-  // Custom group rendering
   renderGroup: (props) => (
     <div className={CLASS_NAMES.group}>
-      <div className={CLASS_NAMES.groupLabel} style={{ color: "#8b5cf6" }}>
+      <div className={CLASS_NAMES.groupLabel}>
         ✨ {props.group.label}
       </div>
       <ul className={CLASS_NAMES.groupItems}>
         {props.group.items.map((item) => (
-          <MyCustomItem
-            key={item.id}
-            item={item}
-            isActive={props.activeIndex === item.index}
-            onSelect={() => props.onSelect(item.index)}
-            onHover={() => props.onHover(item.index)}
-          />
+          <MyCustomItem key={item.id} {...props} item={item} />
         ))}
       </ul>
     </div>
@@ -445,61 +644,19 @@ registry.registerGroup({
 });
 ```
 
-### Custom Menu Rendering
-
-```tsx
-configureSlashMenu(ctx, {
-  renderMenu: (props) => (
-    <div className="my-custom-menu">
-      <div className="menu-header">Slash Menu</div>
-      {props.defaultRender()}
-      <div className="menu-footer">Press Esc to close</div>
-    </div>
-  ),
-});
-```
-
 ### Using Slots
 
-```tsx
-configureSlashMenu(ctx, {
-  slots: {
-    beforeHeader: () => <div>Before Tabs</div>,
-    afterHeader: () => <div>After Tabs</div>,
-    beforeContent: () => <div>Before Content</div>,
-    afterContent: () => <div>After Content</div>,
-    beforeFooter: () => <div>Before Footer</div>,
-    footer: () => <div className="menu-footer">Custom Footer</div>,
-    afterFooter: () => <div>After Footer</div>,
-    empty: () => <div className="empty-state">🔍 No matches found</div>,
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  pluginOptions: {
+    slots: {
+      beforeHeader: () => <div>Before Tabs</div>,
+      afterHeader: () => <div>After Tabs</div>,
+      footer: () => <div>Custom Footer</div>,
+      empty: () => <div>🔍 No matches</div>,
+    },
   },
-});
-```
-
-### Menu Structure
-
-```
-┌─────────────────────────────┐
-│  [beforeHeader]             │  ← fixed
-├─────────────────────────────┤
-│  tabs (header)              │  ← fixed
-├─────────────────────────────┤
-│  [afterHeader]              │  ← fixed
-├─────────────────────────────┤
-│  body (scrollable area)     │
-│  ┌─────────────────────────┐│
-│  │ [beforeContent]         ││
-│  │ content (menu items)    ││  ← scrollable
-│  │ [afterContent]          ││
-│  │ ShortcutHints (sticky)  ││  ← sticky, controlled by showShortcutHints
-│  └─────────────────────────┘│
-├─────────────────────────────┤
-│  [beforeFooter]             │  ← fixed
-├─────────────────────────────┤
-│  [footer]                   │  ← fixed
-├─────────────────────────────┤
-│  [afterFooter]              │  ← fixed
-└─────────────────────────────┘
+}));
 ```
 
 ## Keyboard Shortcuts
@@ -515,67 +672,32 @@ configureSlashMenu(ctx, {
 
 ## Search Logic
 
-The slash menu supports smart search, allowing quick filtering of menu items by keywords.
+### Match Scope (by priority)
 
-### Match Scope
-
-Search matches across four dimensions (by priority):
-
-1. **Item label** (`item.label`) - Highest priority
-2. **Item keywords** (`item.keywords`) - High priority
-3. **Group label** (`group.label`) - Lower priority
-4. **Group keywords** (`group.keywords`) - Lowest priority
+1. **Item label** (`item.label`)
+2. **Item keywords** (`item.keywords`)
+3. **Group label** (`group.label`)
+4. **Group keywords** (`group.keywords`)
 
 ### Match Rules
 
 - Case insensitive
-- Partial matching (contains)
-- Matching any dimension shows the menu item
+- Partial matching supported
+- Matching any dimension shows the item
 
-### Sorting Rules
+### Scoring
 
-Results are sorted by relevance score:
-
-| Match Type | Exact Match | Prefix Match | Contains Match |
-|------------|-------------|--------------|----------------|
+| Match Type | Exact | Prefix | Contains |
+|------------|-------|--------|----------|
 | Item label | 100 | 80 | 60 |
 | Item keywords | 90 | 70 | 50 |
 | Group label | 40 | 30 | 20 |
 | Group keywords | 35 | 25 | 15 |
 
-### Usage Examples
-
-```
-Type "/basic"   → Matches all items in Basic group (via group label)
-Type "/h1"      → Matches Heading 1 (via item keywords)
-Type "/heading" → Matches all heading items (via item keywords)
-```
-
-### Default Group Keywords
-
-| Group | Keywords |
-|-------|----------|
-| Basic | `basic`, `基础`, `jichu`, `jc`, `常用`, `changyong`, `cy` |
-| Advanced | `advanced`, `高级`, `gaoji`, `gj`, `更多`, `gengduo`, `gd` |
-
-### Custom Group Keywords
-
-```typescript
-registry.registerGroup({
-  id: "containers",
-  label: "Containers",
-  keywords: ["container", "callout", "box"],
-  items: [...],
-});
-```
-
 ## CSS Variables
-
-All CSS variables use `--milkdown-slash-menu-` prefix:
 
 ```css
 :root {
-  /* Colors */
   --milkdown-slash-menu-bg: #fff;
   --milkdown-slash-menu-border: #cbd5e1;
   --milkdown-slash-menu-text: #1e293b;
@@ -583,22 +705,12 @@ All CSS variables use `--milkdown-slash-menu-` prefix:
   --milkdown-slash-menu-hover-bg: #cbd5e1;
   --milkdown-slash-menu-tab-bg: #f8fafc;
   --milkdown-slash-menu-tab-active: #3b82f6;
-
-  /* Sizes */
-  --milkdown-slash-menu-width: 300px;
-  --milkdown-slash-menu-max-height: 520px;
   --milkdown-slash-menu-border-radius: 12px;
   --milkdown-slash-menu-item-radius: 8px;
   --milkdown-slash-menu-icon-size: 28px;
-
-  /* Grid Layout */
-  --milkdown-slash-menu-grid-columns: 2;       /* Default max columns for grid layout */
-  --milkdown-slash-menu-icon-grid-columns: 5;  /* Default max columns for icon-grid layout */
-
-  /* Animation */
+  --milkdown-slash-menu-grid-columns: 2;
+  --milkdown-slash-menu-icon-grid-columns: 5;
   --milkdown-slash-menu-transition: 0.15s ease;
-
-  /* Shadow */
   --milkdown-slash-menu-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
@@ -616,91 +728,15 @@ All CSS variables use `--milkdown-slash-menu-` prefix:
 ## Programmatic Control
 
 ```typescript
-import { slashMenuAPI } from "@xz-summer/milkdown-slash-menu-react";
+import { slashMenuAPI } from "@xz-summer/milkdown-slash-menu-vue";
 
-// Get API
 const api = ctx.get(slashMenuAPI.key);
 
-// Show menu at position
+// Show menu
 api.show(cursorPosition);
 
 // Hide menu
 api.hide();
-```
-
-## TypeScript Types
-
-```typescript
-// Menu item configuration
-interface MenuItemConfig {
-  id: string;
-  label: string;
-  keywords?: string[];
-  icon?: string;
-  description?: string;
-  disabled?: boolean;
-  action: (ctx: Ctx) => void;
-  priority?: number;
-  meta?: Record<string, unknown>;
-  renderItem?: (props: ItemRenderProps) => unknown;
-}
-
-// Group configuration
-interface MenuGroupConfig {
-  id: string;
-  label: string;
-  keywords?: string[];        // Group keywords for search matching
-  layout?: "list" | "grid" | "icon-grid";
-  columns?: number;           // Max columns, auto-wraps when space is insufficient
-  showDescription?: boolean;  // Show description (list layout only), default false
-  priority?: number;
-  meta?: Record<string, unknown>;
-  items?: MenuItemConfig[];
-  renderGroup?: (props: GroupRenderProps) => unknown;
-}
-
-// i18n configuration
-interface SlashMenuI18n {
-  [locale: string]: LocaleConfig;
-}
-
-interface LocaleConfig {
-  groups?: Record<string, string>;
-  items?: Record<string, { label?: string; desc?: string }>;
-  ui?: Partial<UILabels>;
-}
-
-// Menu state
-interface MenuState {
-  groups: RuntimeMenuGroup[];
-  activeIndex: number;
-  filter: string;
-  totalCount: number;
-  show: boolean;
-}
-
-// Render Props
-interface ItemRenderProps {
-  item: RuntimeMenuItem;
-  isActive: boolean;
-  onSelect: () => void;
-  onHover: () => void;
-}
-
-interface GroupRenderProps {
-  group: RuntimeMenuGroup;
-  activeIndex: number;
-  onSelect: (index: number) => void;
-  onHover: (index: number) => void;
-  defaultRender: () => unknown;
-}
-
-interface MenuRenderProps {
-  state: MenuState;
-  callbacks: MenuCallbacks;
-  slots?: MenuSlots;
-  defaultRender: () => unknown;
-}
 ```
 
 ## License

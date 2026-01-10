@@ -4,7 +4,7 @@ import type { MilkdownPlugin } from "@milkdown/kit/ctx";
 
 import { keymap } from "@milkdown/kit/prose/keymap";
 import { TextSelection, Plugin } from "@milkdown/kit/prose/state";
-import { $node, $command, $remark, $prose, $view } from "@milkdown/kit/utils";
+import { $node, $command, $remark, $prose, $view, $ctx } from "@milkdown/kit/utils";
 import directive from "remark-directive";
 import {
   importantIcon,
@@ -37,10 +37,10 @@ export interface ContainerTypeConfig {
   aliases?: string[];
 }
 
-/** 插件配置选项 */
-export interface ContainerPluginOptions {
-  /** 自定义容器类型配置（会与默认配置合并，包括 details） */
-  types?: ContainerTypeConfig[];
+/** 插件配置 */
+export interface ContainerConfig {
+  /** 自定义容器类型配置（会与默认配置合并） */
+  types: ContainerTypeConfig[];
 }
 
 /** 默认容器类型配置（包含 details） */
@@ -54,7 +54,37 @@ export const defaultContainerTypes: ContainerTypeConfig[] = [
   { type: ContainerTypes.DETAILS, title: "详情", icon: detailsIcon, aliases: ["detail", "collapse", "collapsible"] },
 ];
 
-// ============ 运行时配置 ============
+/** 默认配置 */
+const defaultContainerConfig: ContainerConfig = {
+  types: [],
+};
+
+// ============ 配置 Slice ============
+
+export const containerConfig = $ctx(defaultContainerConfig, "containerConfigCtx");
+
+/**
+ * 合并配置的工具函数
+ * 
+ * @example
+ * ```ts
+ * ctx.update(containerConfig.key, mergeContainerConfig({
+ *   types: [
+ *     { type: "custom", title: "自定义", icon: customIcon }
+ *   ]
+ * }))
+ * ```
+ */
+export function mergeContainerConfig(
+  options: Partial<ContainerConfig>
+): (prev: ContainerConfig) => ContainerConfig {
+  return (prev) => ({
+    ...prev,
+    types: options.types ? [...prev.types, ...options.types] : prev.types,
+  });
+}
+
+// ============ 运行时配置（内部使用） ============
 
 /** 容器类型配置映射：type -> config（不含 details） */
 let containerTypesMap: Map<string, ContainerTypeConfig> = new Map();
@@ -68,12 +98,9 @@ let allDetailsNames: string[] = [];
 let detailsConfig: ContainerTypeConfig = defaultContainerTypes.find(c => c.type === ContainerTypes.DETAILS)!;
 
 /**
- * 初始化配置
- * 1. 合并默认配置和用户自定义配置
- * 2. 分离 details 配置和普通容器配置
- * 3. 构建别名映射
+ * 初始化配置（内部使用）
  */
-function initConfig(options?: ContainerPluginOptions) {
+function initConfig(userTypes: ContainerTypeConfig[] = []) {
   containerTypesMap = new Map();
   typeAliasMap = new Map();
 
@@ -86,10 +113,8 @@ function initConfig(options?: ContainerPluginOptions) {
   }
   
   // 用户配置覆盖默认配置
-  if (options?.types) {
-    for (const config of options.types) {
-      allTypes.set(config.type, config);
-    }
+  for (const config of userTypes) {
+    allTypes.set(config.type, config);
   }
 
   // 分离 details 和普通容器
@@ -114,6 +139,7 @@ function initConfig(options?: ContainerPluginOptions) {
   allDetailsNames = [detailsConfig.type, ...(detailsConfig.aliases || [])];
 }
 
+// 初始化默认配置
 initConfig();
 
 // ============ 工具函数 ============
@@ -1034,23 +1060,19 @@ export const containerDropPlugin = $prose(() => {
   });
 });
 
-// ============ 配置函数 ============
+// ============ 初始化插件 ============
 
 /**
- * 配置容器插件
- *
- * 允许用户自定义容器类型，会与默认类型合并
- *
- * @example
- * configureContainer({
- *   types: [
- *     { type: "custom", title: "自定义", icon: customIcon, aliases: ["my-custom"] }
- *   ]
- * });
+ * 配置初始化插件
+ * 读取 containerConfig 并初始化运行时配置
  */
-export function configureContainer(options: ContainerPluginOptions) {
-  initConfig(options);
-}
+const containerInitPlugin: MilkdownPlugin = (ctx) => async () => {
+  // 等待一个微任务，确保 .config() 中的代码先执行
+  await Promise.resolve();
+  
+  const config = ctx.get(containerConfig.key);
+  initConfig(config.types);
+};
 
 // ============ 导出 ============
 
@@ -1058,14 +1080,32 @@ export function configureContainer(options: ContainerPluginOptions) {
  * 容器插件集合
  *
  * 包含：
+ * - containerConfig: 配置 slice
+ * - containerInitPlugin: 配置初始化
  * - remarkDirective: markdown 指令解析
  * - 普通容器 Schema 和 NodeView
  * - Details Schema 和 NodeView
  * - Keymap 快捷键
  * - Drop 过滤插件
  * - 创建命令
+ * 
+ * @example
+ * ```ts
+ * editor
+ *   .use(containerPlugin)
+ *   .config((ctx) => {
+ *     ctx.update(containerConfig.key, mergeContainerConfig({
+ *       types: [
+ *         { type: "custom", title: "自定义", icon: customIcon }
+ *       ]
+ *     }))
+ *   })
+ *   .create()
+ * ```
  */
 export const containerPlugin: MilkdownPlugin[] = [
+  containerConfig,
+  containerInitPlugin,
   remarkDirective,
   // 普通容器
   containerTitleSchema,

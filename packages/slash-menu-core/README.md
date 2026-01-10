@@ -16,6 +16,7 @@
 - ♿ **无障碍** - 完整 ARIA 属性支持
 - 🔌 **事件钩子** - onOpen、onClose、onSelect、onFilter
 - 📐 **智能定位** - 自适应高度、方向锁定、位置固定点
+- 🔢 **精确排序** - 支持 priority 粗排和 position 精确定位
 
 ## 预览
 
@@ -41,15 +42,19 @@ pnpm add @xz-summer/milkdown-slash-menu-core
 ```tsx
 import { Editor } from "@milkdown/kit/core";
 import { commonmark } from "@milkdown/kit/preset/commonmark";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-react";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-react";
 
 const editor = await Editor.make()
   .use(commonmark)
-  .use(slashMenuPlugins)
+  .use(slashMenuPlugin)
   .config((ctx) => {
-    configureSlashMenu(ctx, {
-      locale: "zh-CN",  // 或 "en"
-    });
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+      locale: "zh-CN",
+    }));
   })
   .create();
 ```
@@ -59,14 +64,20 @@ const editor = await Editor.make()
 ```vue
 <script setup lang="ts">
 import { Milkdown, useEditor } from "@milkdown/vue";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-vue";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-vue";
 
 useEditor((root) => {
   return Editor.make()
     .use(commonmark)
-    .use(slashMenuPlugins)
+    .use(slashMenuPlugin)
     .config((ctx) => {
-      configureSlashMenu(ctx);
+      ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+        locale: "zh-CN",
+      }));
     });
 });
 </script>
@@ -80,326 +91,307 @@ useEditor((root) => {
 
 ```tsx
 import { Crepe } from "@milkdown/crepe";
-import { slashMenuPlugins, configureSlashMenu } from "@xz-summer/milkdown-slash-menu-react";
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig 
+} from "@xz-summer/milkdown-slash-menu-react";
 
 const crepe = new Crepe({
   root,
-  featureConfigs: {
-    [Crepe.Feature.BlockEdit]: {
-      // 禁用 Crepe 内置斜杠菜单
-      textGroup: null,
-      listGroup: null,
-      advancedGroup: null,
-    },
+  features: {
+    [Crepe.Feature.BlockEdit]: false,  // 禁用 Crepe 内置斜杠菜单
   },
 });
 
 crepe.editor
-  .use(slashMenuPlugins)
+  .use(slashMenuPlugin)
   .config((ctx) => {
-    configureSlashMenu(ctx);
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+      locale: "zh-CN",
+    }));
   });
 ```
 
-### 注意事项
+## 配置方式
 
-> ⚠️ **重要**：`configureSlashMenu` 必须在 `.config()` 中调用，确保在 `create()` 之前执行。在 `create()` 之后调用会导致配置不生效。
+斜杠菜单提供两种配置方式：
 
-> 💡 **提示**：`registry.registerGroup()` 和 `registry.registerItem()` 也可以在 `.config()` 中调用，因为 `menuRegistryCtx` 在 `.use(slashMenuPlugin)` 时已注入。
+### 方式 1：ctx.update + mergeSlashMenuConfig（推荐）
 
-## 配置选项
-
-### configureSlashMenu
+使用 `ctx.update` 配合 `mergeSlashMenuConfig` 工具函数，支持深度合并：
 
 ```typescript
-configureSlashMenu(ctx, {
-  // 触发字符，默认 "/"
-  trigger: "/",
-  
-  // 语言，默认 "zh-CN"
-  locale: "zh-CN",  // "zh-CN" | "en"
-  
-  // i18n 配置（按语言分组）
-  i18n: {
-    "zh-CN": {
-      groups: { basic: "基础块" },
-      items: { 
-        h1: { label: "大标题", desc: "文章主标题" } 
+import { 
+  slashMenuPlugin, 
+  slashMenuConfig, 
+  mergeSlashMenuConfig,
+  DEFAULT_GROUP_IDS,
+} from "@xz-summer/milkdown-slash-menu-vue";
+
+editor
+  .use(slashMenuPlugin)
+  .config((ctx) => {
+    ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+      locale: 'zh-CN',
+      pluginOptions: {
+        trigger: '/',
+        floating: { maxHeight: 400 },
       },
-      ui: { noResults: "没有找到" }
-    },
-    "en": {
-      groups: { basic: "Basic Blocks" },
-      items: { 
-        h1: { label: "Big Heading", desc: "Main title" } 
-      },
-      ui: { noResults: "Nothing found" }
-    }
-  },
-  
-  // 是否注册默认菜单项，默认 true
-  registerDefaults: true,
-  
-  // 默认菜单配置
+      // 修改分组配置（数组结构，按 id 合并）
+      groups: [
+        { 
+          id: DEFAULT_GROUP_IDS.BASIC, 
+          layout: 'list',
+          showDescription: true,
+        },
+        {
+          id: DEFAULT_GROUP_IDS.ADVANCED,
+          items: [
+            {
+              id: 'mermaid',
+              label: '流程图',
+              icon: mermaidIcon,
+              keywords: ['mermaid', 'diagram', '流程图'],
+              position: { after: 'code' },  // 插入到 code 后面
+              action: (ctx) => { /* ... */ },
+            },
+          ],
+        },
+      ],
+    }));
+  })
+  .create();
+```
+
+### 方式 2：Registry API（动态注册）
+
+使用 `menuRegistryCtx` 动态注册分组和菜单项：
+
+```typescript
+import { 
+  slashMenuPlugin, 
+  menuRegistryCtx,
+  DEFAULT_GROUP_IDS,
+} from "@xz-summer/milkdown-slash-menu-vue";
+
+editor
+  .use(slashMenuPlugin)
+  .config((ctx) => {
+    const registry = ctx.get(menuRegistryCtx.key);
+    
+    // 注册新分组
+    registry.registerGroup({
+      id: 'ai',
+      label: 'AI 助手',
+      position: { index: 0 },  // 插入到最前面
+      items: [
+        { id: 'ai-write', label: 'AI 写作', action: () => {} },
+      ],
+    });
+    
+    // 在已有分组中插入菜单项
+    registry.insertItemAfter(DEFAULT_GROUP_IDS.ADVANCED, 'code', {
+      id: 'mermaid',
+      label: '流程图',
+      action: () => {},
+    });
+  })
+  .create();
+```
+
+## 配置结构
+
+### SlashMenuConfig
+
+```typescript
+interface SlashMenuConfig {
+  /** 语言，默认 "zh-CN" */
+  locale: LocaleType;
+  /** i18n 配置 */
+  i18n: SlashMenuI18n;
+  /** 分组配置（数组结构，按 id 合并） */
+  groups: MenuGroupConfig[];
+  /** 是否注册默认菜单项，默认 true */
+  registerDefaults: boolean;
+  /** 默认菜单配置 */
   defaultMenuOptions: {
-    enableImage: true,   // 启用图片，默认 true
-    enableTable: true,   // 启用表格，默认 true
-    enableMath: true,    // 启用数学公式，默认 true
-  },
-  
-  // 是否显示快捷键提示，默认 true
-  showShortcutHints: true,
-  
-  // 浮动定位与尺寸配置
-  floating: {
-    offset: 10,           // 偏移量，默认 10
-    placement: "bottom",  // 优先方向，"top" | "bottom"，默认 "bottom"
-    width: 260,           // 菜单宽度，默认 260
-    maxHeight: 440,       // 最大高度，默认 440（空间不足时自动缩小）
-    minHeight: 100,       // 最小高度，默认 100
-    padding: 10,          // 距离视口边缘的安全距离，默认 10
-  },
-  
-  // 事件钩子
-  onOpen: () => console.log("菜单打开"),
-  onClose: () => console.log("菜单关闭"),
-  onSelect: (item) => console.log("选择:", item.label),
-  onFilter: (query, results) => console.log("搜索:", query, results.length),
-});
-```
-
-### 浮动定位特性
-
-斜杠菜单使用智能浮动定位系统，具有以下特性：
-
-#### 自适应高度
-
-- `maxHeight` 设置菜单的最大高度（默认 440px）
-- 当可用空间不足时，菜单高度会自动缩小以适应空间
-- 高度不会低于 `minHeight`（默认 100px）
-- 实际高度 = `min(maxHeight, 可用空间 - padding)`
-
-```typescript
-// 示例：限制菜单最大高度为 300px
-configureSlashMenu(ctx, {
-  floating: {
-    maxHeight: 300,
-    minHeight: 80,
-  },
-});
-```
-
-#### 智能方向选择
-
-菜单会根据可用空间智能选择展开方向：
-
-1. 如果配置方向（`placement`）的空间 >= `maxHeight`，使用配置方向
-2. 如果配置方向空间不足 `maxHeight`，但另一方空间更大且 >= `minHeight`，翻转到另一方
-3. 否则使用配置方向（即使空间不足也不翻转）
-
-```
-场景：配置 placement: "bottom"，maxHeight: 440
-
-光标在页面顶部：
-  下方空间 500px >= 440px → 向下展开 ✅
-
-光标在页面中部偏下：
-  下方空间 200px < 440px
-  上方空间 400px > 200px 且 >= 100px → 向上展开 ✅
-
-光标在页面底部：
-  下方空间 50px < 440px
-  上方空间 30px < 50px → 向下展开（配置方向）
-```
-
-#### 方向锁定
-
-- 菜单首次打开时，根据光标位置和可用空间决定展开方向（向上或向下）
-- **同一次打开期间，方向保持锁定**，不会因为过滤后内容减少而翻转
-- 关闭菜单后重新打开会重新计算方向
-
-#### 位置固定点
-
-- **向下展开**：菜单顶部固定在光标位置，内容向下增长
-- **向上展开**：菜单底部固定在光标位置，内容向上增长
-- 过滤内容时，菜单始终以光标位置为固定点收缩/扩展
-
-```
-向下展开 (bottom)          向上展开 (top)
-                          
-光标 ─┬─────────┐          ┌─────────┬─ 光标
-      │ 菜单项1 │          │ 菜单项1 │
-      │ 菜单项2 │          │ 菜单项2 │
-      │ 菜单项3 │          │ 菜单项3 │
-      └─────────┘          └─────────┘
-      ↓ 内容向下增长        ↑ 内容向上增长
-```
-
-#### 配置优先方向
-
-```typescript
-// 优先向上展开（空间不足时自动向下）
-configureSlashMenu(ctx, {
-  floating: {
-    placement: "top",
-  },
-});
-
-// 优先向下展开（默认，空间不足时自动向上）
-configureSlashMenu(ctx, {
-  floating: {
-    placement: "bottom",
-  },
-});
-```
-
-### i18n 配置结构
-
-```typescript
-// i18n 配置类型
-interface SlashMenuI18n {
-  [locale: string]: LocaleConfig;
-}
-
-interface LocaleConfig {
-  // 分组标签
-  groups?: Record<string, string>;
-  // 菜单项（标签 + 描述）
-  items?: Record<string, { label?: string; desc?: string }>;
-  // UI 文本
-  ui?: {
-    noResults?: string;
-    navigate?: string;
-    select?: string;
-    close?: string;
-    switchGroup?: string;
-    firstItem?: string;
-    lastItem?: string;
-    expand?: string;
-    collapse?: string;
+    enableImage: boolean;
+    enableTable: boolean;
+    enableMath: boolean;
   };
+  /** 插件选项 */
+  pluginOptions: SlashMenuOptions;
+  /** 渲染器工厂（由框架包自动设置） */
+  rendererFactory?: RendererFactory;
 }
 ```
 
-### i18n 翻译优先级
-
-标签和描述的翻译遵循以下优先级（从高到低）：
-
-1. **用户 i18n 配置** - `configureSlashMenu` 中传入的 `i18n` 配置
-2. **注册时指定值** - `registerGroup` / `registerItem` 时指定的 `label` / `description`
-3. **内置语言包** - 插件内置的中英文翻译
+### MenuGroupConfig（分组配置）
 
 ```typescript
-// 示例：优先级演示
-configureSlashMenu(ctx, {
-  locale: "zh-CN",
-  i18n: {
-    "zh-CN": {
-      items: {
-        h1: { label: "主标题" },  // 优先级 1：用户 i18n
-      },
-    },
-  },
-});
-
-// 注册自定义菜单项
-registry.registerItem("basic", {
-  id: "my-item",
-  label: "我的菜单项",  // 优先级 2：注册时指定
-  action: (ctx) => {},
-});
-
-// 默认菜单项（如 h2）使用内置语言包  // 优先级 3：内置语言包
+interface MenuGroupConfig {
+  id: string;
+  /** 标签，可选。不指定则由 i18n 系统根据 id 获取 */
+  label?: string;
+  /** 分组关键词，搜索时匹配 */
+  keywords?: string[];
+  /** 布局类型 */
+  layout?: "list" | "grid" | "icon-grid";
+  /** 最大列数（仅 grid/icon-grid 有效） */
+  columns?: number;
+  /** 是否显示描述（仅 list 布局有效） */
+  showDescription?: boolean;
+  /** 排序优先级，数值越大越靠前 */
+  priority?: number;
+  /** 精确位置控制 */
+  position?: Position;
+  /** 菜单项列表 */
+  items?: MenuItemConfig[];
+  /** 自定义分组渲染 */
+  renderGroup?: (props: GroupRenderProps) => unknown;
+}
 ```
 
-**适用场景：**
+### MenuItemConfig（菜单项配置）
 
-| 场景 | 推荐方式 |
+```typescript
+interface MenuItemConfig {
+  id: string;
+  /** 标签，可选。不指定则由 i18n 系统根据 id 获取 */
+  label?: string;
+  /** 搜索关键词 */
+  keywords?: string[];
+  /** 图标（SVG 字符串） */
+  icon?: string;
+  /** 描述文本 */
+  description?: string;
+  /** 是否禁用 */
+  disabled?: boolean;
+  /** 点击执行的操作 */
+  action: (ctx: Ctx) => void;
+  /** 排序优先级，数值越大越靠前 */
+  priority?: number;
+  /** 精确位置控制 */
+  position?: Position;
+  /** 自定义菜单项渲染 */
+  renderItem?: (props: ItemRenderProps) => unknown;
+}
+```
+
+### Position（位置配置）
+
+```typescript
+interface Position {
+  /** 插入到指定 id 之前 */
+  before?: string;
+  /** 插入到指定 id 之后 */
+  after?: string;
+  /** 插入到指定索引位置 */
+  index?: number;
+}
+```
+
+## 排序逻辑
+
+分组和菜单项的排序遵循以下规则：
+
+### 排序优先级
+
+1. **position** - 精确位置控制，优先级最高
+2. **priority** - 粗排权重，数值越大越靠前
+
+### 排序流程
+
+```
+1. 分离有 position 和没有 position 的项
+2. 没有 position 的项按 priority 降序排列
+3. 处理有 position 的项：
+   - index: 插入到指定索引位置
+   - before: 插入到目标 id 之前
+   - after: 插入到目标 id 之后
+4. 如果目标不存在，追加到末尾
+```
+
+### 使用示例
+
+```typescript
+// 使用 priority 粗排
+registry.registerGroup({
+  id: 'ai',
+  label: 'AI',
+  priority: 200,  // 数值大，排在前面
+  items: [...],
+});
+
+// 使用 position 精确定位
+registry.registerGroup({
+  id: 'containers',
+  label: '容器',
+  position: { after: 'basic' },  // 插入到 basic 后面
+  items: [...],
+});
+
+// 使用 index 指定位置
+registry.registerGroup({
+  id: 'quick',
+  label: '快捷',
+  position: { index: 0 },  // 插入到最前面
+  items: [...],
+});
+
+// 菜单项也支持 position
+registry.insertItemAfter('advanced', 'code', {
+  id: 'mermaid',
+  label: '流程图',
+  // 内部自动设置 position: { after: 'code' }
+  action: () => {},
+});
+```
+
+### 默认分组优先级
+
+| 分组 | priority |
 |------|----------|
-| 覆盖默认菜单项的翻译 | 使用 `i18n` 配置 |
-| 自定义菜单项（单语言） | 注册时直接指定 `label` |
-| 自定义菜单项（多语言） | 注册时不指定 `label`，通过 `i18n` 配置各语言翻译 |
-
-### i18n 使用示例
-
-```typescript
-configureSlashMenu(ctx, {
-  locale: "zh-CN",
-  i18n: {
-    "zh-CN": {
-      groups: {
-        basic: "基础块",
-        containers: "容器",  // 自定义分组
-      },
-      items: {
-        text: { label: "段落", desc: "普通段落文本" },
-        h1: { label: "大标题", desc: "文章主标题" },
-        // 只覆盖标签
-        h2: { label: "中标题" },
-        // 只覆盖描述
-        h3: { desc: "小节标题" },
-        // 自定义菜单项
-        "container-info": { label: "信息框", desc: "信息提示" },
-      },
-      ui: {
-        noResults: "没有找到匹配项",
-      }
-    },
-    "en": {
-      groups: {
-        basic: "Basic",
-        containers: "Containers",
-      },
-      items: {
-        text: { label: "Paragraph", desc: "Plain text" },
-        h1: { label: "Heading 1", desc: "Main title" },
-        "container-info": { label: "Info", desc: "Information callout" },
-      },
-      ui: {
-        noResults: "No matches found",
-      }
-    }
-  }
-});
-```
+| basic | 100 |
+| advanced | 80 |
 
 ## 菜单注册表 API
 
 ### 获取注册表
 
 ```typescript
-import { menuRegistryCtx } from "@xz-summer/milkdown-slash-menu-react";
+import { menuRegistryCtx } from "@xz-summer/milkdown-slash-menu-vue";
 
-// 在 configureSlashMenu 之后
 const registry = ctx.get(menuRegistryCtx.key);
 ```
 
-### 注册分组和菜单项
+### 注册分组
 
 ```typescript
-// 注册新分组（带菜单项）
 registry.registerGroup({
   id: "custom",
   label: "自定义",
-  keywords: ["custom", "自定义", "zidingyi", "zdy"],  // 分组关键词，搜索时匹配
-  layout: "list",      // "list" | "grid" | "icon-grid"
-  columns: 2,          // 最大列数（仅 grid/icon-grid 布局有效），空间不足时自动换行
-  showDescription: true, // 是否显示描述（仅 list 布局有效），默认 false
-  priority: 50,        // 排序权重，越大越靠前
+  keywords: ["custom", "自定义", "zdy"],
+  layout: "list",
+  showDescription: true,
+  priority: 50,
   items: [
     {
       id: "custom-item",
       label: "自定义项",
       icon: "<svg>...</svg>",
-      description: "这是描述文本",
-      keywords: ["custom", "自定义", "zidingyi"],
-      action: (ctx) => {
-        // 执行操作
-      },
+      description: "描述文本",
+      keywords: ["custom"],
+      action: (ctx) => { /* ... */ },
     },
   ],
 });
+```
 
+### 注册菜单项
+
+```typescript
 // 向已有分组添加菜单项
 registry.registerItem("basic", {
   id: "my-item",
@@ -408,45 +400,69 @@ registry.registerItem("basic", {
 });
 ```
 
-![注册新增菜单项](../../img/注册新增菜单项.png)
-
-布局变更效果（icon-grid → list）：
-
-![布局由icon-grid变更为list](../../img/布局由icon-grid变更为list.png)
-
-### 更新菜单项
+### 插入分组（精确位置）
 
 ```typescript
-import { DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+// 在 basic 前插入
+registry.insertGroupBefore("basic", {
+  id: "quick",
+  label: "快捷",
+  items: [...],
+});
 
-// 更新标签和关键词
-registry.updateItem(DEFAULT_ITEM_IDS.H1, {
+// 在 basic 后插入
+registry.insertGroupAfter("basic", {
+  id: "containers",
+  label: "容器",
+  items: [...],
+});
+```
+
+### 插入菜单项（精确位置）
+
+```typescript
+// 在 code 前插入
+registry.insertItemBefore("advanced", "code", {
+  id: "diagram",
+  label: "图表",
+  action: () => {},
+});
+
+// 在 code 后插入
+registry.insertItemAfter("advanced", "code", {
+  id: "mermaid",
+  label: "流程图",
+  action: () => {},
+});
+```
+
+### 更新
+
+```typescript
+// 更新菜单项
+registry.updateItem("h1", {
   label: "大标题",
-  keywords: ["big", "title", "大标题"],
+  keywords: ["big", "title"],
 });
 
 // 更新分组
 registry.updateGroup("basic", {
-  label: "基础格式",
   layout: "grid",
+  columns: 3,
 });
 ```
 
-### 删除菜单项
+### 删除
 
 ```typescript
-import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+// 删除菜单项
+registry.unregisterItem("math");
 
-// 删除单个菜单项
-registry.unregisterItem(DEFAULT_ITEM_IDS.MATH);
+// 删除分组
+registry.unregisterGroup("advanced");
 
-// 删除整个分组
-registry.unregisterGroup(DEFAULT_GROUP_IDS.ADVANCED);
-
-// 过滤菜单项（保留 h1-h3）
-registry.filterItems(DEFAULT_GROUP_IDS.BASIC, (item) => {
-  return ![DEFAULT_ITEM_IDS.H4, DEFAULT_ITEM_IDS.H5, DEFAULT_ITEM_IDS.H6].includes(item.id);
-});
+// 过滤菜单项
+registry.filterItems("basic", (item) => !["h4", "h5", "h6"].includes(item.id));
 
 // 过滤分组
 registry.filterGroups((group) => group.id !== "advanced");
@@ -455,13 +471,13 @@ registry.filterGroups((group) => group.id !== "advanced");
 ### 查询
 
 ```typescript
-// 获取所有分组
+// 获取所有分组（已排序）
 const groups = registry.getGroups();
 
 // 获取单个分组
 const basicGroup = registry.getGroup("basic");
 
-// 获取分组内的菜单项
+// 获取分组内的菜单项（已排序）
 const items = registry.getItems("basic");
 
 // 获取单个菜单项
@@ -474,7 +490,7 @@ const allItems = registry.getAllItems();
 ## 默认 ID 常量
 
 ```typescript
-import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-react";
+import { DEFAULT_GROUP_IDS, DEFAULT_ITEM_IDS } from "@xz-summer/milkdown-slash-menu-vue";
 
 // 分组 ID
 DEFAULT_GROUP_IDS.BASIC     // "basic"
@@ -499,32 +515,106 @@ DEFAULT_ITEM_IDS.TABLE        // "table"
 DEFAULT_ITEM_IDS.MATH         // "math"
 ```
 
+## 插件选项
+
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  pluginOptions: {
+    // 触发字符，默认 "/"
+    trigger: "/",
+    
+    // 是否显示快捷键提示，默认 true
+    showShortcutHints: true,
+    
+    // 浮动定位配置
+    floating: {
+      offset: 10,           // 偏移量
+      placement: "bottom",  // 优先方向 "top" | "bottom"
+      width: 260,           // 菜单宽度
+      maxHeight: 440,       // 最大高度
+      minHeight: 100,       // 最小高度
+      padding: 10,          // 距视口边缘安全距离
+    },
+    
+    // 事件钩子
+    onOpen: () => {},
+    onClose: () => {},
+    onSelect: (item) => {},
+    onFilter: (query, results) => {},
+  },
+}));
+```
+
+## i18n 配置
+
+### 配置结构
+
+```typescript
+interface SlashMenuI18n {
+  [locale: string]: LocaleConfig;
+}
+
+interface LocaleConfig {
+  groups?: Record<string, string>;
+  items?: Record<string, { label?: string; desc?: string }>;
+  ui?: {
+    noResults?: string;
+    navigate?: string;
+    select?: string;
+    close?: string;
+  };
+}
+```
+
+### 翻译优先级
+
+1. **用户 i18n 配置** - `mergeSlashMenuConfig` 中的 `i18n`
+2. **注册时指定值** - `registerGroup` / `registerItem` 时的 `label`
+3. **内置语言包** - 插件内置的中英文翻译
+
+### 使用示例
+
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  locale: "zh-CN",
+  i18n: {
+    "zh-CN": {
+      groups: {
+        basic: "基础块",
+        containers: "容器",
+      },
+      items: {
+        h1: { label: "大标题", desc: "文章主标题" },
+        "container-info": { label: "信息框", desc: "信息提示" },
+      },
+      ui: {
+        noResults: "没有找到匹配项",
+      },
+    },
+  },
+}));
+```
+
 ## 自定义渲染
 
-![自定义菜单项及渲染](../../img/自定义菜单项及渲染.png)
-
-### 自定义菜单项渲染
+### 自定义菜单项
 
 ```tsx
 registry.registerGroup({
   id: "ai",
-  label: "AI 助手",
+  label: "AI",
   items: [
     {
-      id: "ai-generate",
-      label: "AI 生成",
+      id: "ai-write",
+      label: "AI 写作",
       icon: aiIcon,
-      action: (ctx) => {},
-      // 自定义渲染
+      action: () => {},
       renderItem: (props) => (
         <li
           data-index={props.item.index}
           className={`${CLASS_NAMES.item} ${props.isActive ? CLASS_NAMES.itemActive : ""}`}
           onPointerEnter={props.onHover}
           onPointerUp={props.onSelect}
-          style={{
-            background: props.isActive ? "linear-gradient(135deg, #667eea, #764ba2)" : undefined,
-          }}
         >
           <span dangerouslySetInnerHTML={{ __html: props.item.icon }} />
           <span>{props.item.label}</span>
@@ -536,27 +626,20 @@ registry.registerGroup({
 });
 ```
 
-### 自定义分组渲染
+### 自定义分组
 
 ```tsx
 registry.registerGroup({
   id: "ai",
   label: "AI 助手",
-  // 自定义分组渲染
   renderGroup: (props) => (
     <div className={CLASS_NAMES.group}>
-      <div className={CLASS_NAMES.groupLabel} style={{ color: "#8b5cf6" }}>
+      <div className={CLASS_NAMES.groupLabel}>
         ✨ {props.group.label}
       </div>
       <ul className={CLASS_NAMES.groupItems}>
         {props.group.items.map((item) => (
-          <MyCustomItem
-            key={item.id}
-            item={item}
-            isActive={props.activeIndex === item.index}
-            onSelect={() => props.onSelect(item.index)}
-            onHover={() => props.onHover(item.index)}
-          />
+          <MyCustomItem key={item.id} {...props} item={item} />
         ))}
       </ul>
     </div>
@@ -565,66 +648,19 @@ registry.registerGroup({
 });
 ```
 
-### 自定义整体菜单渲染
-
-```tsx
-configureSlashMenu(ctx, {
-  renderMenu: (props) => (
-    <div className="my-custom-menu">
-      {/* 自定义头部 */}
-      <div className="menu-header">斜杠菜单</div>
-      
-      {/* 使用默认渲染 */}
-      {props.defaultRender()}
-      
-      {/* 自定义底部 */}
-      <div className="menu-footer">按 Esc 关闭</div>
-    </div>
-  ),
-});
-```
-
 ### 使用插槽
 
-```tsx
-configureSlashMenu(ctx, {
-  slots: {
-    beforeHeader: () => <div>标签栏前</div>,
-    afterHeader: () => <div>标签栏后</div>,
-    beforeContent: () => <div>内容区前</div>,
-    afterContent: () => <div>内容区后</div>,
-    beforeFooter: () => <div>底部前</div>,
-    footer: () => <div className="menu-footer">自定义底部</div>,
-    afterFooter: () => <div>底部后</div>,
-    empty: () => <div className="empty-state">🔍 没有找到匹配项</div>,
+```typescript
+ctx.update(slashMenuConfig.key, mergeSlashMenuConfig({
+  pluginOptions: {
+    slots: {
+      beforeHeader: () => <div>标签栏前</div>,
+      afterHeader: () => <div>标签栏后</div>,
+      footer: () => <div>自定义底部</div>,
+      empty: () => <div>🔍 没有找到</div>,
+    },
   },
-});
-```
-
-### 菜单结构
-
-```
-┌─────────────────────────────┐
-│  [beforeHeader]             │  ← 固定
-├─────────────────────────────┤
-│  tabs (header)              │  ← 固定
-├─────────────────────────────┤
-│  [afterHeader]              │  ← 固定
-├─────────────────────────────┤
-│  body (滚动区域)            │
-│  ┌─────────────────────────┐│
-│  │ [beforeContent]         ││
-│  │ content (菜单项)        ││  ← 可滚动
-│  │ [afterContent]          ││
-│  │ ShortcutHints (sticky)  ││  ← sticky 定位，showShortcutHints 控制
-│  └─────────────────────────┘│
-├─────────────────────────────┤
-│  [beforeFooter]             │  ← 固定
-├─────────────────────────────┤
-│  [footer]                   │  ← 固定
-├─────────────────────────────┤
-│  [afterFooter]              │  ← 固定
-└─────────────────────────────┘
+}));
 ```
 
 ## 键盘快捷键
@@ -640,26 +676,20 @@ configureSlashMenu(ctx, {
 
 ## 搜索逻辑
 
-斜杠菜单支持智能搜索，输入关键词可快速过滤菜单项。
+### 匹配范围（按优先级）
 
-### 匹配范围
-
-搜索会匹配以下四个维度（按优先级排序）：
-
-1. **菜单项标签** (`item.label`) - 最高优先级
-2. **菜单项关键词** (`item.keywords`) - 次高优先级
-3. **分组标签** (`group.label`) - 较低优先级
-4. **分组关键词** (`group.keywords`) - 最低优先级
+1. **菜单项标签** (`item.label`)
+2. **菜单项关键词** (`item.keywords`)
+3. **分组标签** (`group.label`)
+4. **分组关键词** (`group.keywords`)
 
 ### 匹配规则
 
 - 不区分大小写
-- 支持部分匹配（包含即可）
-- 匹配任意一个维度即显示该菜单项
+- 支持部分匹配
+- 匹配任意维度即显示
 
-### 排序规则
-
-匹配结果按相关性评分排序：
+### 排序评分
 
 | 匹配类型 | 完全匹配 | 前缀匹配 | 包含匹配 |
 |----------|----------|----------|----------|
@@ -668,40 +698,10 @@ configureSlashMenu(ctx, {
 | 分组标签 | 40 | 30 | 20 |
 | 分组关键词 | 35 | 25 | 15 |
 
-### 使用示例
-
-```
-输入 "/基础" → 匹配基础分组下的所有菜单项（通过分组标签）
-输入 "/jc"   → 匹配基础分组下的所有菜单项（通过分组关键词 "jc"）
-输入 "/h1"   → 匹配一级标题（通过菜单项关键词）
-输入 "/标题" → 匹配所有标题项（通过菜单项关键词）
-```
-
-### 默认分组关键词
-
-| 分组 | 关键词 |
-|------|--------|
-| 基础 | `basic`, `基础`, `jichu`, `jc`, `常用`, `changyong`, `cy` |
-| 高级 | `advanced`, `高级`, `gaoji`, `gj`, `更多`, `gengduo`, `gd` |
-
-### 自定义分组关键词
-
-```typescript
-registry.registerGroup({
-  id: "containers",
-  label: "容器",
-  keywords: ["container", "容器", "rongqi", "rq", "callout"],
-  items: [...],
-});
-```
-
 ## CSS 变量
-
-所有 CSS 变量使用 `--milkdown-slash-menu-` 前缀：
 
 ```css
 :root {
-  /* 颜色 */
   --milkdown-slash-menu-bg: #fff;
   --milkdown-slash-menu-border: #cbd5e1;
   --milkdown-slash-menu-text: #1e293b;
@@ -709,20 +709,12 @@ registry.registerGroup({
   --milkdown-slash-menu-hover-bg: #cbd5e1;
   --milkdown-slash-menu-tab-bg: #f8fafc;
   --milkdown-slash-menu-tab-active: #3b82f6;
-
-  /* 尺寸（宽度和高度通过 floating 配置控制） */
   --milkdown-slash-menu-border-radius: 12px;
   --milkdown-slash-menu-item-radius: 8px;
   --milkdown-slash-menu-icon-size: 28px;
-
-  /* Grid 布局 */
-  --milkdown-slash-menu-grid-columns: 2;       /* grid 布局默认最大列数 */
-  --milkdown-slash-menu-icon-grid-columns: 5;  /* icon-grid 布局默认最大列数 */
-
-  /* 动画 */
+  --milkdown-slash-menu-grid-columns: 2;
+  --milkdown-slash-menu-icon-grid-columns: 5;
   --milkdown-slash-menu-transition: 0.15s ease;
-
-  /* 阴影 */
   --milkdown-slash-menu-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
@@ -740,209 +732,15 @@ registry.registerGroup({
 ## 编程式控制
 
 ```typescript
-import { slashMenuAPI } from "@xz-summer/milkdown-slash-menu-react";
+import { slashMenuAPI } from "@xz-summer/milkdown-slash-menu-vue";
 
-// 获取 API
 const api = ctx.get(slashMenuAPI.key);
 
-// 在指定位置显示菜单
+// 显示菜单
 api.show(cursorPosition);
 
 // 隐藏菜单
 api.hide();
-```
-
-## 完整示例：AI 助手分组
-
-```tsx
-import {
-  slashMenuPlugins,
-  configureSlashMenu,
-  menuRegistryCtx,
-  CLASS_NAMES,
-  type ItemRenderProps,
-  type GroupRenderProps,
-} from "@xz-summer/milkdown-slash-menu-react";
-
-// AI 图标
-const sparkleIcon = `<svg>...</svg>`;
-
-// 自定义 AI 菜单项
-const AIMenuItem: React.FC<{ props: ItemRenderProps }> = ({ props }) => {
-  const { item, isActive, onSelect, onHover } = props;
-  
-  return (
-    <li
-      data-index={item.index}
-      className={`${CLASS_NAMES.item} ${isActive ? CLASS_NAMES.itemActive : ""}`}
-      onPointerEnter={onHover}
-      onPointerUp={onSelect}
-      style={{
-        background: isActive ? "linear-gradient(135deg, #667eea, #764ba2)" : undefined,
-        color: isActive ? "white" : undefined,
-      }}
-    >
-      <span
-        className={CLASS_NAMES.itemIcon}
-        dangerouslySetInnerHTML={{ __html: item.icon }}
-        style={{ color: isActive ? "white" : "#8b5cf6" }}
-      />
-      <div style={{ flex: 1 }}>
-        <span className={CLASS_NAMES.itemLabel}>{item.label}</span>
-        {item.description && (
-          <div style={{ fontSize: "12px", opacity: 0.7 }}>
-            {item.description}
-          </div>
-        )}
-      </div>
-      <span style={{
-        padding: "2px 6px",
-        borderRadius: "4px",
-        background: isActive ? "rgba(255,255,255,0.2)" : "linear-gradient(135deg, #667eea, #764ba2)",
-        color: "white",
-        fontSize: "10px",
-      }}>
-        AI
-      </span>
-    </li>
-  );
-};
-
-// 自定义 AI 分组
-const AIGroupRenderer: React.FC<{ props: GroupRenderProps }> = ({ props }) => (
-  <div className={CLASS_NAMES.group}>
-    <div
-      className={CLASS_NAMES.groupLabel}
-      style={{
-        background: "linear-gradient(135deg, #667eea, #764ba2)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-      }}
-    >
-      ✨ {props.group.label}
-    </div>
-    <ul className={CLASS_NAMES.groupItems}>
-      {props.group.items.map((item) => (
-        <AIMenuItem
-          key={item.id}
-          props={{
-            item,
-            isActive: props.activeIndex === item.index,
-            onSelect: () => props.onSelect(item.index),
-            onHover: () => props.onHover(item.index),
-          }}
-        />
-      ))}
-    </ul>
-  </div>
-);
-
-// 使用
-editor.config((ctx) => {
-  configureSlashMenu(ctx, { locale: "zh-CN" });
-  
-  const registry = ctx.get(menuRegistryCtx.key);
-  
-  registry.registerGroup({
-    id: "ai",
-    label: "AI 助手",
-    priority: 200,
-    renderGroup: (props) => <AIGroupRenderer props={props} />,
-    items: [
-      {
-        id: "ai-generate",
-        label: "AI 生成",
-        description: "让 AI 为你写作",
-        icon: sparkleIcon,
-        keywords: ["ai", "generate", "生成"],
-        action: () => alert("AI 生成"),
-      },
-      {
-        id: "ai-translate",
-        label: "翻译",
-        description: "翻译成其他语言",
-        icon: translateIcon,
-        keywords: ["ai", "translate", "翻译"],
-        action: () => alert("AI 翻译"),
-      },
-    ],
-  });
-});
-```
-
-## TypeScript 类型
-
-```typescript
-// 菜单项配置
-interface MenuItemConfig {
-  id: string;
-  label: string;
-  keywords?: string[];
-  icon?: string;
-  description?: string;
-  disabled?: boolean;
-  action: (ctx: Ctx) => void;
-  priority?: number;
-  meta?: Record<string, unknown>;
-  renderItem?: (props: ItemRenderProps) => unknown;
-}
-
-// 分组配置
-interface MenuGroupConfig {
-  id: string;
-  label: string;
-  keywords?: string[];        // 分组关键词，搜索时会匹配
-  layout?: "list" | "grid" | "icon-grid";
-  columns?: number;           // 最大列数，空间不足时自动换行
-  showDescription?: boolean;  // 是否显示描述（仅 list 布局有效），默认 false
-  priority?: number;
-  meta?: Record<string, unknown>;
-  items?: MenuItemConfig[];
-  renderGroup?: (props: GroupRenderProps) => unknown;
-}
-
-// i18n 配置
-interface SlashMenuI18n {
-  [locale: string]: LocaleConfig;
-}
-
-interface LocaleConfig {
-  groups?: Record<string, string>;
-  items?: Record<string, { label?: string; desc?: string }>;
-  ui?: Partial<UILabels>;
-}
-
-// 菜单状态
-interface MenuState {
-  groups: RuntimeMenuGroup[];
-  activeIndex: number;
-  filter: string;
-  totalCount: number;
-  show: boolean;
-}
-
-// 渲染 Props
-interface ItemRenderProps {
-  item: RuntimeMenuItem;
-  isActive: boolean;
-  onSelect: () => void;
-  onHover: () => void;
-}
-
-interface GroupRenderProps {
-  group: RuntimeMenuGroup;
-  activeIndex: number;
-  onSelect: (index: number) => void;
-  onHover: (index: number) => void;
-  defaultRender: () => unknown;
-}
-
-interface MenuRenderProps {
-  state: MenuState;
-  callbacks: MenuCallbacks;
-  slots?: MenuSlots;
-  defaultRender: () => unknown;
-}
 ```
 
 ## License

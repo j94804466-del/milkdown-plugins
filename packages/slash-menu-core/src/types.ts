@@ -2,6 +2,18 @@ import type { Ctx } from "@milkdown/kit/ctx";
 
 import type { LayoutType } from "./constants";
 
+// ============ 位置类型 ============
+
+/** 位置配置，用于精确控制插入位置 */
+export interface Position {
+  /** 插入到指定 id 之前 */
+  before?: string;
+  /** 插入到指定 id 之后 */
+  after?: string;
+  /** 插入到指定索引位置 */
+  index?: number;
+}
+
 // ============ 菜单项类型 ============
 
 /** 菜单项配置（注册时使用） */
@@ -14,7 +26,10 @@ export interface MenuItemConfig {
   description?: string;
   disabled?: boolean;
   action: (ctx: Ctx) => void;
+  /** 排序优先级，数值越大越靠前 */
   priority?: number;
+  /** 精确位置控制，优先于 priority */
+  position?: Position;
   meta?: Record<string, unknown>;
   /** 自定义菜单项渲染 */
   renderItem?: (props: ItemRenderProps) => unknown;
@@ -36,7 +51,10 @@ export interface MenuGroupConfig {
   columns?: number;
   /** 是否显示描述（仅 list 布局有效），默认 false */
   showDescription?: boolean;
+  /** 排序优先级，数值越大越靠前 */
   priority?: number;
+  /** 精确位置控制，优先于 priority */
+  position?: Position;
   meta?: Record<string, unknown>;
   items?: MenuItemConfig[];
   /** 自定义分组渲染 */

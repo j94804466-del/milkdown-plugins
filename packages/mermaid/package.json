@@ -1,65 +1,66 @@
 {
-  "name": "@xz-summer/milkdown-slash-menu-core",
-  "version": "0.2.21",
-  "description": "Framework-agnostic slash menu plugin for Milkdown editor | Milkdown 编辑器的框架无关斜杠菜单插件",
+  "name": "@xz-summer/milkdown-mermaid",
+  "version": "0.1.0",
+  "description": "Mermaid diagram plugin for Milkdown",
   "keywords": [
     "milkdown",
-    "slash-menu",
-    "editor",
-    "plugin"
+    "mermaid",
+    "diagram",
+    "flowchart",
+    "markdown"
   ],
   "author": {
     "name": "夏至",
     "email": "1378511152@qq.com",
     "url": "https://gitee.com/xiazhi926459"
   },
-  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://gitee.com/xiazhi926459/milkdown-plugins.git",
-    "directory": "packages/slash-menu-core"
+    "directory": "packages/mermaid"
   },
-  "homepage": "https://gitee.com/xiazhi926459/milkdown-plugins/tree/master/packages/slash-menu-core",
+  "homepage": "https://gitee.com/xiazhi926459/milkdown-plugins/tree/master/packages/mermaid",
   "bugs": {
     "url": "https://gitee.com/xiazhi926459/milkdown-plugins/issues"
   },
+  "license": "MIT",
   "type": "module",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./style.css": "./dist/style.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
-    "prepublishOnly": "pnpm build"
+    "dev": "tsup --watch"
   },
   "peerDependencies": {
-    "@floating-ui/dom": ">=1.0.0",
-    "@milkdown/kit": ">=7.0.0"
+    "@codemirror/language": "^6.0.0",
+    "@milkdown/kit": "^7.0.0",
+    "@milkdown/preset-commonmark": "^7.0.0",
+    "mermaid": "^11.0.0"
   },
   "devDependencies": {
-    "@floating-ui/dom": "^1.7.4",
+    "@codemirror/language": "^6.12.1",
     "@milkdown/kit": "^7.18.0",
+    "@milkdown/preset-commonmark": "^7.18.0",
+    "codemirror-lang-mermaid": "^0.5.0",
+    "mermaid": "^11.12.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a"
 }

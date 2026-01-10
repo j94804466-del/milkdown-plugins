@@ -7,6 +7,11 @@
     "slash-menu",
     "react"
   ],
+  "author": {
+    "name": "夏至",
+    "email": "1378511152@qq.com",
+    "url": "https://gitee.com/xiazhi926459"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -53,13 +58,13 @@
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
-    "@milkdown/kit": "^7.17.3",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "@milkdown/kit": "^7.18.0",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   },
   "publishConfig": {
     "access": "public"

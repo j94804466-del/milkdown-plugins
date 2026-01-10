@@ -1,6 +1,6 @@
 {
   "name": "@xz-summer/milkdown-slash-menu-core",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "description": "Framework-agnostic slash menu plugin for Milkdown editor | Milkdown 编辑器的框架无关斜杠菜单插件",
   "keywords": [
     "milkdown",

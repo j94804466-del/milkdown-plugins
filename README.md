@@ -1,5 +1,8 @@
 # Milkdown Plugins
 
+[![star](https://gitee.com/xiazhi926459/milkdown-plugins/badge/star.svg?theme=dark)](https://gitee.com/xiazhi926459/milkdown-plugins/stargazers)
+[![fork](https://gitee.com/xiazhi926459/milkdown-plugins/badge/fork.svg?theme=dark)](https://gitee.com/xiazhi926459/milkdown-plugins/members)
+
 一组 [Milkdown](https://milkdown.dev) 编辑器的扩展插件。
 
 ## 📦 包列表

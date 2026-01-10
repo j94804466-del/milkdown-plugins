@@ -97,6 +97,12 @@ crepe.editor
   });
 ```
 
+### Important Notes
+
+> ⚠️ **Important**: `configureSlashMenu` must be called inside `.config()` to ensure it runs before `create()`. Calling it after `create()` will have no effect.
+
+> 💡 **Tip**: `registry.registerGroup()` and `registry.registerItem()` can also be called inside `.config()`, since `menuRegistryCtx` is injected when `.use(slashMenuPlugin)` is called.
+
 ## Configuration Options
 
 ### configureSlashMenu

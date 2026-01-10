@@ -101,6 +101,12 @@ crepe.editor
   });
 ```
 
+### 注意事项
+
+> ⚠️ **重要**：`configureSlashMenu` 必须在 `.config()` 中调用，确保在 `create()` 之前执行。在 `create()` 之后调用会导致配置不生效。
+
+> 💡 **提示**：`registry.registerGroup()` 和 `registry.registerItem()` 也可以在 `.config()` 中调用，因为 `menuRegistryCtx` 在 `.use(slashMenuPlugin)` 时已注入。
+
 ## 配置选项
 
 ### configureSlashMenu

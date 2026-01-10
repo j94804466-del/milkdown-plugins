@@ -38,6 +38,8 @@ export class SlashMenuView {
   private lockedBottom: number | null = null;
   private lockedPlacement: 'top' | 'bottom' | null = null;
 
+  private handleKeydown: ((e: KeyboardEvent) => void) | null = null;
+
   constructor(ctx: Ctx, view: EditorView, options: SlashMenuOptions) {
     this.ctx = ctx;
     this.options = options;
@@ -406,6 +408,7 @@ export class SlashMenuView {
       }
     };
 
+    this.handleKeydown = handleKeydown;
     window.addEventListener("keydown", handleKeydown, { capture: true });
   }
 
@@ -428,6 +431,11 @@ export class SlashMenuView {
   };
 
   destroy = () => {
+    // 移除键盘事件监听器
+    if (this.handleKeydown) {
+      window.removeEventListener("keydown", this.handleKeydown, { capture: true });
+      this.handleKeydown = null;
+    }
     this.slashProvider.destroy();
     this.renderer.unmount();
     this.container.remove();

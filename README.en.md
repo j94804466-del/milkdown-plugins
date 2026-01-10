@@ -1,36 +1,36 @@
-# milkdown-plugins
+# Milkdown Plugins
 
-#### Description
-{**When you're done, you can delete the content in this README and update the file with details for others getting started with your repository**}
+[![star](https://gitee.com/xiazhi926459/milkdown-plugins/badge/star.svg?theme=dark)](https://gitee.com/xiazhi926459/milkdown-plugins/stargazers)
+[![fork](https://gitee.com/xiazhi926459/milkdown-plugins/badge/fork.svg?theme=dark)](https://gitee.com/xiazhi926459/milkdown-plugins/members)
 
-#### Software Architecture
-Software architecture description
+A collection of extension plugins for [Milkdown](https://milkdown.dev) editor.
 
-#### Installation
+## 📦 Packages
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+| Package | Description |
+|---------|-------------|
+| [@xz-summer/milkdown-container](./packages/container) | Container directive plugin (info, tip, warning, danger, details) |
+| [@xz-summer/milkdown-slash-menu-core](./packages/slash-menu-core) | Slash menu core (framework-agnostic) |
+| [@xz-summer/milkdown-slash-menu-react](./packages/slash-menu-react) | Slash menu for React |
+| [@xz-summer/milkdown-slash-menu-vue](./packages/slash-menu-vue) | Slash menu for Vue |
+| [@xz-summer/milkdown-mermaid](./packages/mermaid) | Mermaid diagram plugin (flowchart, sequence, etc.) |
 
-#### Instructions
+## 🚀 Installation
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+```bash
+# Container plugin
+pnpm add @xz-summer/milkdown-container
 
-#### Contribution
+# Slash menu (React)
+pnpm add @xz-summer/milkdown-slash-menu-react
 
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+# Slash menu (Vue)
+pnpm add @xz-summer/milkdown-slash-menu-vue
 
+# Mermaid diagrams
+pnpm add @xz-summer/milkdown-mermaid mermaid
+```
 
-#### Gitee Feature
+## 📄 License
 
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+MIT

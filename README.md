@@ -13,7 +13,7 @@
 | [@xz-summer/milkdown-slash-menu-core](./packages/slash-menu-core) | 斜杠菜单核心（框架无关） |
 | [@xz-summer/milkdown-slash-menu-react](./packages/slash-menu-react) | 斜杠菜单 React 版 |
 | [@xz-summer/milkdown-slash-menu-vue](./packages/slash-menu-vue) | 斜杠菜单 Vue 版 |
-| [@xz-summer/milkdown-mermaid](./packages/mermaid) | Mermaid 图表插件（流程图、时序图等） |
+| [@lee67892/milkdown-mermaid](./packages/mermaid) | Mermaid 图表插件（支持缩放与拖拽） |
 
 ## 🚀 安装
 
@@ -28,7 +28,7 @@ pnpm add @xz-summer/milkdown-slash-menu-react
 pnpm add @xz-summer/milkdown-slash-menu-vue
 
 # Mermaid 图表
-pnpm add @xz-summer/milkdown-mermaid mermaid
+pnpm add @lee67892/milkdown-mermaid mermaid
 ```
 
 ## 📄 License

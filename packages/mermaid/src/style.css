@@ -1,20 +1,88 @@
-/* Mermaid 预览样式 */
 .mermaid-preview {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  min-height: 100px;
-  color: #6b7280;
-  font-size: 14px;
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-height: 180px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-sizing: border-box;
 }
 
-.mermaid-preview svg {
-  max-width: 100%;
+.mermaid-preview__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mermaid-preview__toolbar--hidden {
+  display: none;
+}
+
+.mermaid-preview__toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.mermaid-preview__toolbar-button:hover {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(239, 246, 255, 0.96);
+}
+
+.mermaid-preview__toolbar-button:active {
+  transform: translateY(1px);
+}
+
+.mermaid-preview__viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  overflow: hidden;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at top, rgba(148, 163, 184, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
+  cursor: grab;
+  touch-action: none;
+}
+
+.mermaid-preview__viewport[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.mermaid-preview__canvas {
+  transform-origin: center center;
+  transition: transform 0.12s ease-out;
+  will-change: transform;
+}
+
+.mermaid-preview__canvas > svg {
+  display: block;
+  max-width: none;
+  width: auto;
   height: auto;
 }
 
-/* 错误提示样式 */
+.mermaid-preview__canvas > .mermaid-error {
+  margin: 0 auto;
+}
+
 .mermaid-error {
   color: #ef4444;
   font-size: 12px;
@@ -27,10 +95,27 @@
   max-width: 100%;
 }
 
-/* 暗色主题支持 */
 @media (prefers-color-scheme: dark) {
   .mermaid-preview {
-    color: #9ca3af;
+    border-color: rgba(71, 85, 105, 0.8);
+    background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+  }
+
+  .mermaid-preview__toolbar-button {
+    border-color: rgba(100, 116, 139, 0.75);
+    background: rgba(15, 23, 42, 0.92);
+    color: #e2e8f0;
+  }
+
+  .mermaid-preview__toolbar-button:hover {
+    border-color: rgba(96, 165, 250, 0.58);
+    background: rgba(30, 41, 59, 0.96);
+  }
+
+  .mermaid-preview__viewport {
+    background:
+      radial-gradient(circle at top, rgba(96, 165, 250, 0.14), transparent 42%),
+      linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.92));
   }
 
   .mermaid-error {

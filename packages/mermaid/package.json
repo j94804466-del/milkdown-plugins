@@ -1,7 +1,7 @@
 {
-  "name": "@xz-summer/milkdown-mermaid",
-  "version": "0.1.0",
-  "description": "Mermaid diagram plugin for Milkdown",
+  "name": "@lee67892/milkdown-mermaid",
+  "version": "0.2.0",
+  "description": "Mermaid diagram plugin for Milkdown with pan and zoom support",
   "keywords": [
     "milkdown",
     "mermaid",
@@ -10,18 +10,17 @@
     "markdown"
   ],
   "author": {
-    "name": "夏至",
-    "email": "1378511152@qq.com",
-    "url": "https://gitee.com/xiazhi926459"
+    "name": "j94804466-del",
+    "url": "https://github.com/j94804466-del"
   },
   "repository": {
     "type": "git",
-    "url": "https://gitee.com/xiazhi926459/milkdown-plugins.git",
+    "url": "https://github.com/j94804466-del/milkdown-plugins.git",
     "directory": "packages/mermaid"
   },
-  "homepage": "https://gitee.com/xiazhi926459/milkdown-plugins/tree/master/packages/mermaid",
+  "homepage": "https://github.com/j94804466-del/milkdown-plugins/tree/master/packages/mermaid",
   "bugs": {
-    "url": "https://gitee.com/xiazhi926459/milkdown-plugins/issues"
+    "url": "https://github.com/j94804466-del/milkdown-plugins/issues"
   },
   "license": "MIT",
   "type": "module",
@@ -40,8 +39,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "build": "npm exec tsup",
+    "dev": "npm exec tsup -- --watch"
   },
   "peerDependencies": {
     "@codemirror/language": "^6.0.0",

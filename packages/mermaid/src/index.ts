@@ -8,19 +8,42 @@ import { $command, $ctx } from "@milkdown/kit/utils";
 import { addBlockTypeCommand, clearTextInCurrentBlockCommand, codeBlockSchema } from "@milkdown/preset-commonmark";
 import mermaid from "mermaid";
 
-// ============ 类型定义 ============
+type MermaidPreviewInteractionState = {
+  scale: number;
+  translateX: number;
+  translateY: number;
+};
 
-/** 插件配置 */
+type MermaidPreviewElements = {
+  readonly viewport: HTMLDivElement;
+  readonly canvas: HTMLDivElement;
+  readonly zoomInButton: HTMLButtonElement;
+  readonly zoomOutButton: HTMLButtonElement;
+  readonly resetButton: HTMLButtonElement;
+  readonly fitButton: HTMLButtonElement;
+};
+
+type MermaidPreviewPointerState = {
+  readonly pointerId: number;
+  readonly startX: number;
+  readonly startY: number;
+  readonly originTranslateX: number;
+  readonly originTranslateY: number;
+};
+
 export interface MermaidConfig {
-  /** mermaid 初始化配置 */
   mermaidOptions: MermaidLibConfig;
-  /** 渲染中占位符文本 */
   placeholder: string;
-  /** 错误时显示的前缀 */
   errorPrefix: string;
+  zoomable: boolean;
+  pannable: boolean;
+  showToolbar: boolean;
+  minScale: number;
+  maxScale: number;
+  initialScale: number;
+  fitToContainer: boolean;
 }
 
-/** 默认配置 */
 const defaultMermaidConfig: MermaidConfig = {
   mermaidOptions: {
     startOnLoad: false,
@@ -29,15 +52,17 @@ const defaultMermaidConfig: MermaidConfig = {
   },
   placeholder: "渲染中...",
   errorPrefix: "Mermaid Error: ",
+  zoomable: true,
+  pannable: true,
+  showToolbar: true,
+  minScale: 0.25,
+  maxScale: 4,
+  initialScale: 1,
+  fitToContainer: true,
 };
-
-// ============ 配置 Slice ============
 
 export const mermaidConfig = $ctx(defaultMermaidConfig, "mermaidConfigCtx");
 
-/**
- * 合并配置的工具函数
- */
 export function mergeMermaidConfig(
   options: Partial<MermaidConfig>
 ): (prev: MermaidConfig) => MermaidConfig {
@@ -50,16 +75,255 @@ export function mergeMermaidConfig(
   });
 }
 
-// ============ 图标 ============
-
 export const mermaidIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>`;
 
-// ============ 渲染函数 ============
+function clampScale(value: number, config: MermaidConfig): number {
+  return Math.min(Math.max(value, config.minScale), config.maxScale);
+}
 
-/**
- * 渲染 Mermaid 图表
- * 返回带占位符的 HTML，异步更新为 SVG
- */
+function getDistance(x: number, y: number): number {
+  return Math.sqrt(x * x + y * y);
+}
+
+function applyCanvasTransform(canvas: HTMLDivElement, state: MermaidPreviewInteractionState) {
+  canvas.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+}
+
+function resetPreviewState(
+  canvas: HTMLDivElement,
+  config: MermaidConfig
+): MermaidPreviewInteractionState {
+  const state: MermaidPreviewInteractionState = {
+    scale: clampScale(config.initialScale, config),
+    translateX: 0,
+    translateY: 0,
+  };
+  applyCanvasTransform(canvas, state);
+  return state;
+}
+
+function fitPreviewToViewport(
+  elements: MermaidPreviewElements,
+  state: MermaidPreviewInteractionState,
+  config: MermaidConfig
+) {
+  const svg = elements.canvas.querySelector("svg");
+  if (!(svg instanceof SVGSVGElement)) return;
+
+  const svgBox = svg.getBBox();
+  const viewportWidth = elements.viewport.clientWidth;
+  const viewportHeight = elements.viewport.clientHeight;
+  if (svgBox.width <= 0 || svgBox.height <= 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+    state.scale = clampScale(config.initialScale, config);
+    state.translateX = 0;
+    state.translateY = 0;
+    applyCanvasTransform(elements.canvas, state);
+    return;
+  }
+
+  const horizontalScale = (viewportWidth - 32) / svgBox.width;
+  const verticalScale = (viewportHeight - 32) / svgBox.height;
+  const nextScale = clampScale(Math.min(horizontalScale, verticalScale), config);
+  state.scale = nextScale;
+  state.translateX = 0;
+  state.translateY = 0;
+  applyCanvasTransform(elements.canvas, state);
+}
+
+function createToolbarButton(label: string, title: string) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "mermaid-preview__toolbar-button";
+  button.textContent = label;
+  button.title = title;
+  return button;
+}
+
+function createPreviewElements(config: MermaidConfig): MermaidPreviewElements {
+  const viewport = document.createElement("div");
+  viewport.className = "mermaid-preview__viewport";
+
+  const canvas = document.createElement("div");
+  canvas.className = "mermaid-preview__canvas";
+  viewport.appendChild(canvas);
+
+  const zoomOutButton = createToolbarButton("−", "缩小");
+  const zoomInButton = createToolbarButton("+", "放大");
+  const resetButton = createToolbarButton("1:1", "恢复原始比例");
+  const fitButton = createToolbarButton("适应", "适应容器");
+
+  if (!config.showToolbar) {
+    zoomOutButton.hidden = true;
+    zoomInButton.hidden = true;
+    resetButton.hidden = true;
+    fitButton.hidden = true;
+  }
+
+  return {
+    viewport,
+    canvas,
+    zoomInButton,
+    zoomOutButton,
+    resetButton,
+    fitButton,
+  };
+}
+
+function bindMermaidPreviewInteractions(
+  previewEl: HTMLElement,
+  config: MermaidConfig
+) {
+  const viewport = previewEl.querySelector<HTMLDivElement>(".mermaid-preview__viewport");
+  const canvas = previewEl.querySelector<HTMLDivElement>(".mermaid-preview__canvas");
+  const zoomInButton = previewEl.querySelector<HTMLButtonElement>("[data-action='zoom-in']");
+  const zoomOutButton = previewEl.querySelector<HTMLButtonElement>("[data-action='zoom-out']");
+  const resetButton = previewEl.querySelector<HTMLButtonElement>("[data-action='reset']");
+  const fitButton = previewEl.querySelector<HTMLButtonElement>("[data-action='fit']");
+
+  if (
+    !(viewport instanceof HTMLDivElement)
+    || !(canvas instanceof HTMLDivElement)
+    || !(zoomInButton instanceof HTMLButtonElement)
+    || !(zoomOutButton instanceof HTMLButtonElement)
+    || !(resetButton instanceof HTMLButtonElement)
+    || !(fitButton instanceof HTMLButtonElement)
+  ) {
+    return;
+  }
+
+  const elements: MermaidPreviewElements = {
+    viewport,
+    canvas,
+    zoomInButton,
+    zoomOutButton,
+    resetButton,
+    fitButton,
+  };
+
+  const state = resetPreviewState(canvas, config);
+  let pointerState: MermaidPreviewPointerState | null = null;
+
+  const applyScale = (nextScale: number) => {
+    state.scale = clampScale(nextScale, config);
+    applyCanvasTransform(canvas, state);
+  };
+
+  const handlePointerDown = (event: PointerEvent) => {
+    if (!config.pannable || event.button !== 0) return;
+    pointerState = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originTranslateX: state.translateX,
+      originTranslateY: state.translateY,
+    };
+    viewport.dataset.dragging = "true";
+    viewport.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!pointerState || pointerState.pointerId !== event.pointerId) return;
+
+    state.translateX = pointerState.originTranslateX + (event.clientX - pointerState.startX);
+    state.translateY = pointerState.originTranslateY + (event.clientY - pointerState.startY);
+    applyCanvasTransform(canvas, state);
+    event.preventDefault();
+  };
+
+  const clearPointerState = (event: PointerEvent) => {
+    if (!pointerState || pointerState.pointerId !== event.pointerId) return;
+    pointerState = null;
+    viewport.dataset.dragging = "false";
+    if (viewport.hasPointerCapture(event.pointerId)) {
+      viewport.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  viewport.addEventListener("pointerdown", handlePointerDown);
+  viewport.addEventListener("pointermove", handlePointerMove);
+  viewport.addEventListener("pointerup", clearPointerState);
+  viewport.addEventListener("pointercancel", clearPointerState);
+  viewport.addEventListener("mouseleave", (event) => {
+    if (!(event instanceof PointerEvent)) return;
+    clearPointerState(event);
+  });
+
+  viewport.addEventListener("wheel", (event) => {
+    if (!config.zoomable) return;
+    event.preventDefault();
+
+    const direction = Math.sign(event.deltaY);
+    const step = direction > 0 ? 0.9 : 1.1;
+    const nextScale = state.scale * step;
+    applyScale(nextScale);
+  }, { passive: false });
+
+  zoomInButton.addEventListener("click", () => {
+    if (!config.zoomable) return;
+    applyScale(state.scale * 1.15);
+  });
+
+  zoomOutButton.addEventListener("click", () => {
+    if (!config.zoomable) return;
+    applyScale(state.scale / 1.15);
+  });
+
+  resetButton.addEventListener("click", () => {
+    state.scale = clampScale(config.initialScale, config);
+    state.translateX = 0;
+    state.translateY = 0;
+    applyCanvasTransform(canvas, state);
+  });
+
+  fitButton.addEventListener("click", () => {
+    fitPreviewToViewport(elements, state, config);
+  });
+
+  const svg = canvas.querySelector("svg");
+  if (!(svg instanceof SVGSVGElement)) return;
+
+  const viewBox = svg.getAttribute("viewBox");
+  if (!viewBox) {
+    const width = svg.width.baseVal.value || getDistance(svg.getBBox().width, 0);
+    const height = svg.height.baseVal.value || getDistance(0, svg.getBBox().height);
+    if (width > 0 && height > 0) {
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    }
+  }
+
+  if (config.fitToContainer) {
+    requestAnimationFrame(() => {
+      fitPreviewToViewport(elements, state, config);
+    });
+  } else {
+    applyCanvasTransform(canvas, state);
+  }
+}
+
+function createMermaidPreviewMarkup(
+  id: string,
+  config: MermaidConfig
+) {
+  const toolbarClassName = config.showToolbar
+    ? "mermaid-preview__toolbar"
+    : "mermaid-preview__toolbar mermaid-preview__toolbar--hidden";
+
+  return `
+    <div data-mermaid-id="${id}" class="mermaid-preview">
+      <div class="${toolbarClassName}">
+        <button type="button" class="mermaid-preview__toolbar-button" data-action="zoom-out" title="缩小">−</button>
+        <button type="button" class="mermaid-preview__toolbar-button" data-action="zoom-in" title="放大">+</button>
+        <button type="button" class="mermaid-preview__toolbar-button" data-action="reset" title="恢复原始比例">1:1</button>
+        <button type="button" class="mermaid-preview__toolbar-button" data-action="fit" title="适应容器">适应</button>
+      </div>
+      <div class="mermaid-preview__viewport">
+        <div class="mermaid-preview__canvas">${config.placeholder}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderMermaid(content: string, config: MermaidConfig): string {
   try {
     const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -67,43 +331,44 @@ function renderMermaid(content: string, config: MermaidConfig): string {
     mermaid
       .render(id, content)
       .then(({ svg }) => {
-        const previewEl = document.querySelector(`[data-mermaid-id="${id}"]`);
-        if (previewEl) {
-          previewEl.innerHTML = svg;
-        }
+        const previewEl = document.querySelector<HTMLElement>(`[data-mermaid-id="${id}"]`);
+        if (!previewEl) return;
+
+        const canvas = previewEl.querySelector<HTMLElement>(".mermaid-preview__canvas");
+        if (!(canvas instanceof HTMLElement)) return;
+
+        canvas.innerHTML = svg;
+        bindMermaidPreviewInteractions(previewEl, config);
       })
       .catch((err) => {
-        const previewEl = document.querySelector(`[data-mermaid-id="${id}"]`);
-        if (previewEl) {
-          previewEl.innerHTML = `<div class="mermaid-error">${config.errorPrefix}${err.message}</div>`;
-        }
+        const previewEl = document.querySelector<HTMLElement>(`[data-mermaid-id="${id}"]`);
+        if (!previewEl) return;
+
+        const canvas = previewEl.querySelector<HTMLElement>(".mermaid-preview__canvas");
+        if (!(canvas instanceof HTMLElement)) return;
+
+        const message = err instanceof Error ? err.message : String(err);
+        canvas.innerHTML = `<div class="mermaid-error">${config.errorPrefix}${message}</div>`;
       })
       .finally(() => {
-        // 清理 mermaid 渲染时创建的临时元素
-        // mermaid.render 会在 body 中创建 id 为 "d" + id 的容器
         const tempContainer = document.getElementById(`d${id}`);
         if (tempContainer) {
           tempContainer.remove();
         }
-        // 也清理可能残留的 SVG 元素
+
         const tempSvg = document.getElementById(id);
         if (tempSvg && !tempSvg.closest(`[data-mermaid-id="${id}"]`)) {
           tempSvg.remove();
         }
       });
 
-    return `<div data-mermaid-id="${id}" class="mermaid-preview">${config.placeholder}</div>`;
+    return createMermaidPreviewMarkup(id, config);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return `<div class="mermaid-error">${config.errorPrefix}${message}</div>`;
   }
 }
 
-// ============ CodeMirror 语言 ============
-
-/**
- * 创建 Mermaid 语言描述
- */
 function createMermaidLanguage(): LanguageDescription {
   return LanguageDescription.of({
     name: "Mermaid",
@@ -116,13 +381,8 @@ function createMermaidLanguage(): LanguageDescription {
   });
 }
 
-// ============ 命令 ============
-
-/**
- * 插入 Mermaid 代码块命令
- */
 export const insertMermaidCommand = $command("insertMermaid", (ctx) => () => {
-  return (state, dispatch) => {
+  return () => {
     const commands = ctx.get(commandsCtx);
     commands.call(clearTextInCurrentBlockCommand.key);
     const codeBlock = codeBlockSchema.type(ctx);
@@ -134,12 +394,6 @@ export const insertMermaidCommand = $command("insertMermaid", (ctx) => () => {
   };
 });
 
-// ============ 斜杠菜单项配置 ============
-
-/**
- * Mermaid 斜杠菜单项配置
- * 可直接用于 registry.registerItem()
- */
 export const mermaidSlashMenuItem = {
   id: "mermaid",
   label: "流程图",
@@ -151,15 +405,8 @@ export const mermaidSlashMenuItem = {
   },
 };
 
-// ============ 初始化插件 ============
-
-/**
- * 清理残留的 mermaid 临时元素
- */
 function cleanupMermaidElements() {
-  // 清理所有以 "dmermaid-" 开头的容器（mermaid 渲染时创建的）
   document.querySelectorAll('[id^="dmermaid-"]').forEach((el) => el.remove());
-  // 清理所有不在预览容器内的 mermaid SVG
   document.querySelectorAll('svg[id^="mermaid-"]').forEach((el) => {
     if (!el.closest('[data-mermaid-id]')) {
       el.remove();
@@ -167,22 +414,13 @@ function cleanupMermaidElements() {
   });
 }
 
-/**
- * 初始化插件
- * 配置 mermaid 和 codeBlockConfig
- */
 const mermaidInitPlugin: MilkdownPlugin = (ctx) => async () => {
   await Promise.resolve();
 
   const config = ctx.get(mermaidConfig.key);
-
-  // 清理可能残留的元素
   cleanupMermaidElements();
-
-  // 初始化 mermaid
   mermaid.initialize(config.mermaidOptions);
 
-  // 配置代码块
   ctx.update(codeBlockConfig.key, (prev) => ({
     ...prev,
     languages: [...(prev.languages || []), createMermaidLanguage()],
@@ -190,29 +428,12 @@ const mermaidInitPlugin: MilkdownPlugin = (ctx) => async () => {
       if (language.toLowerCase() === "mermaid" && content.length > 0) {
         return renderMermaid(content, config);
       }
-      const renderPreview = prev.renderPreview as ((lang: string, content: string, apply: unknown) => string | undefined) | undefined;
+      const renderPreview = prev.renderPreview as ((lang: string, nextContent: string, apply: unknown) => string | undefined) | undefined;
       return renderPreview?.(language, content, applyPreview);
     },
   }));
 };
 
-// ============ 导出插件 ============
-
-/**
- * Mermaid 插件
- * 
- * @example
- * ```ts
- * editor
- *   .use(mermaidPlugin)
- *   .config((ctx) => {
- *     ctx.update(mermaidConfig.key, mergeMermaidConfig({
- *       mermaidOptions: { theme: 'dark' },
- *       placeholder: 'Loading...',
- *     }))
- *   })
- * ```
- */
 export const mermaidPlugin: MilkdownPlugin[] = [
   mermaidConfig,
   insertMermaidCommand,

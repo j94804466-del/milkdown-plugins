@@ -26,8 +26,8 @@ editor
       },
       zoomable: true,
       pannable: true,
-      showToolbar: true,
-      fitToContainer: true,
+      showToolbar: false,
+      fitToContainer: false,
     }))
   })
 ```
@@ -48,11 +48,11 @@ editor
 | `errorPrefix` | `string` | `'Mermaid Error: '` | 错误信息前缀 |
 | `zoomable` | `boolean` | `true` | 是否允许滚轮与按钮缩放 |
 | `pannable` | `boolean` | `true` | 是否允许鼠标拖拽平移 |
-| `showToolbar` | `boolean` | `true` | 是否显示预览工具栏 |
+| `showToolbar` | `boolean` | `false` | 是否显示预览工具栏 |
 | `minScale` | `number` | `0.25` | 最小缩放比例 |
 | `maxScale` | `number` | `4` | 最大缩放比例 |
 | `initialScale` | `number` | `1` | 初始缩放比例 |
-| `fitToContainer` | `boolean` | `true` | 渲染后是否自动适应容器 |
+| `fitToContainer` | `boolean` | `false` | 渲染后是否自动适应容器 |
 
 ## 斜杠菜单集成
 

@@ -54,11 +54,11 @@ const defaultMermaidConfig: MermaidConfig = {
   errorPrefix: "Mermaid Error: ",
   zoomable: true,
   pannable: true,
-  showToolbar: true,
+  showToolbar: false,
   minScale: 0.25,
   maxScale: 4,
   initialScale: 1,
-  fitToContainer: true,
+  fitToContainer: false,
 };
 
 export const mermaidConfig = $ctx(defaultMermaidConfig, "mermaidConfigCtx");

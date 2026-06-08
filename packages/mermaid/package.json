@@ -1,6 +1,6 @@
 {
   "name": "@lee67892/milkdown-mermaid",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mermaid diagram plugin for Milkdown with pan and zoom support",
   "keywords": [
     "milkdown",
